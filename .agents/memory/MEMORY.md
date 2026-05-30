@@ -1,0 +1,1 @@
+- [MBG Dapur Stack](mbg-dapur-stack.md) — monorepo setup, ports, auth pattern, and design system decisions worth preserving across sessions.

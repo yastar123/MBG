@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
@@ -14,7 +14,9 @@ import {
   ClipboardList,
   CalendarCheck,
   Building2,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Bell,
+  Calendar
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearToken } from "@/lib/auth";
@@ -63,38 +65,55 @@ const navGroups = [
   },
 ];
 
+function useDatetime() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: user, isLoading } = useGetMe({ query: { retry: false } });
   const logout = useLogout();
+  const now = useDatetime();
 
   const handleLogout = () => {
     logout.mutate(undefined, {
-      onSettled: () => {
-        clearToken();
-      }
+      onSettled: () => clearToken()
     });
   };
+
+  const allItems = navGroups.flatMap(g => g.items);
+  const activeItem = allItems.find(i => location === i.href || location.startsWith(i.href + "/"));
+  const activeGroup = navGroups.find(g => g.items.some(i => location === i.href || location.startsWith(i.href + "/")));
+
+  const dateStr = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <Sidebar className="border-r border-sidebar-border shadow-sm">
           <SidebarHeader className="p-4 border-b border-sidebar-border">
-            <div className="flex items-center gap-2 px-2">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-md">
-                <Utensils size={20} />
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="bg-sidebar-primary/20 text-sidebar-primary p-2 rounded-lg border border-sidebar-primary/30">
+                <Utensils size={18} />
               </div>
               <div>
-                <h2 className="font-bold text-lg tracking-tight leading-none text-sidebar-foreground">MBG Dapur</h2>
-                <p className="text-xs text-sidebar-foreground/70 font-medium">Sistem Manajemen</p>
+                <h2 className="font-bold text-base tracking-tight leading-none text-sidebar-foreground">MBG Dapur</h2>
+                <p className="text-xs text-sidebar-foreground/50 font-medium mt-0.5">Sistem Manajemen</p>
               </div>
             </div>
           </SidebarHeader>
-          <SidebarContent>
+
+          <SidebarContent className="py-2">
             {navGroups.map((group) => (
               <SidebarGroup key={group.label}>
-                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                <SidebarGroupLabel className="text-sidebar-foreground/40 text-xs tracking-widest uppercase px-3 py-1">
+                  {group.label}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {group.items.map((item) => {
@@ -102,9 +121,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       return (
                         <SidebarMenuItem key={item.name}>
                           <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                            <Link href={item.href} className="flex items-center gap-3">
-                              <item.icon size={18} />
-                              <span className="font-medium">{item.name}</span>
+                            <Link href={item.href} className="flex items-center gap-3 py-2">
+                              <item.icon size={17} />
+                              <span className="font-medium text-sm">{item.name}</span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -115,26 +134,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarGroup>
             ))}
           </SidebarContent>
-          <SidebarFooter className="border-t border-sidebar-border p-4">
+
+          <SidebarFooter className="border-t border-sidebar-border p-3">
             {isLoading ? (
-              <div className="h-10 bg-sidebar-accent animate-pulse rounded-md" />
+              <div className="h-12 bg-sidebar-accent/40 animate-pulse rounded-lg" />
             ) : user ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 text-sidebar-primary flex items-center justify-center font-bold text-sm shrink-0">
-                    {user.nama.charAt(0)}
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-bold text-sm shrink-0">
+                    {user.nama.charAt(0).toUpperCase()}
                   </div>
                   <div className="overflow-hidden">
-                    <p className="text-sm font-semibold truncate text-sidebar-foreground">{user.nama}</p>
-                    <p className="text-xs text-sidebar-foreground/70 truncate capitalize">{user.role.replace('_', ' ')}</p>
+                    <p className="text-sm font-semibold truncate text-sidebar-foreground leading-tight">{user.nama}</p>
+                    <p className="text-xs text-sidebar-foreground/50 truncate capitalize">{user.role.replace(/_/g, ' ')}</p>
                   </div>
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="p-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors"
+                  className="p-1.5 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors shrink-0"
                   title="Keluar"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                 </button>
               </div>
             ) : null}
@@ -142,22 +162,37 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
         
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="h-14 border-b bg-card/95 backdrop-blur-sm flex items-center px-4 shrink-0 sticky top-0 z-10">
-            <SidebarTrigger className="md:hidden" />
-            <div className="font-bold ml-4 md:hidden text-sm">MBG Dapur</div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground ml-1">
-              {navGroups.flatMap(g => g.items).find(i => location === i.href || location.startsWith(i.href + "/")) && (
-                <>
-                  <span>MBG Dapur</span>
-                  <span>/</span>
-                  <span className="text-foreground font-medium">
-                    {navGroups.flatMap(g => g.items).find(i => location === i.href || location.startsWith(i.href + "/"))?.name}
-                  </span>
-                </>
-              )}
+          <header className="h-14 border-b bg-card/95 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 sticky top-0 z-10 shadow-sm">
+            <SidebarTrigger className="md:hidden shrink-0" />
+
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <div className="hidden md:flex items-center gap-1.5 text-sm min-w-0">
+                <span className="text-muted-foreground/60 shrink-0">MBG Dapur</span>
+                {activeGroup && (
+                  <>
+                    <span className="text-muted-foreground/40">/</span>
+                    <span className="text-muted-foreground/60 shrink-0">{activeGroup.label}</span>
+                  </>
+                )}
+                {activeItem && (
+                  <>
+                    <span className="text-muted-foreground/40">/</span>
+                    <span className="text-foreground font-semibold truncate">{activeItem.name}</span>
+                  </>
+                )}
+              </div>
+              <div className="md:hidden font-bold text-sm text-foreground truncate">
+                {activeItem?.name ?? "MBG Dapur"}
+              </div>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-full border border-border/50 shrink-0">
+              <Calendar size={12} />
+              <span>{dateStr}</span>
             </div>
           </header>
-          <div className="flex-1 overflow-auto p-4 md:p-8">
+
+          <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
             <div className="mx-auto max-w-6xl animate-slide-up">
               {children}
             </div>

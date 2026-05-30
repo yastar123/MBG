@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Pencil, Trash2, Search, GraduationCap } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Search, GraduationCap, School } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 type PenerimaManfaat = { id: number; nama: string; sekolah: string; kelas: string; wilayah: string; is_aktif: boolean };
 type Summary = { wilayah: string; total_penerima: number; hadir_hari_ini: number; persen_jangkauan: number };
@@ -41,8 +41,12 @@ export default function PenerimaManfaatPage() {
   });
 
   const del = useMutation({
-    mutationFn: async (id: number) => { await fetch(`/api/penerima-manfaat/${id}`, { method: "DELETE" }); },
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/penerima-manfaat/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/penerima-manfaat"] }); toast({ title: "Data dihapus" }); setDelId(null); },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
@@ -53,6 +57,7 @@ export default function PenerimaManfaatPage() {
   }
 
   const filtered = (data ?? []).filter(p =>
+    !search ||
     p.nama.toLowerCase().includes(search.toLowerCase()) ||
     p.sekolah.toLowerCase().includes(search.toLowerCase()) ||
     p.wilayah.toLowerCase().includes(search.toLowerCase())
@@ -60,54 +65,63 @@ export default function PenerimaManfaatPage() {
 
   const totalAktif = (data ?? []).filter(p => p.is_aktif).length;
   const totalHadir = (summary ?? []).reduce((s, x) => s + x.hadir_hari_ini, 0);
-
-  const pieData = (summary ?? []).map(s => ({ name: s.wilayah, value: s.total_penerima }));
+  const jangkauan = totalAktif > 0 ? Math.round((totalHadir / totalAktif) * 100) : 0;
+  const pieData = (summary ?? []).filter(s => s.total_penerima > 0).map(s => ({ name: s.wilayah, value: s.total_penerima }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Penerima Manfaat</h1>
-          <p className="text-muted-foreground text-sm">Kelola data siswa penerima program MBG</p>
+          <h1 className="page-heading">Penerima Manfaat</h1>
+          <p className="page-subheading">Kelola data siswa penerima program MBG</p>
         </div>
-        <Button onClick={openAdd} className="gap-2"><Plus size={16} /> Tambah Penerima</Button>
+        <Button onClick={openAdd} className="gap-2 shrink-0"><Plus size={16} /> Tambah Penerima</Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-sm"><CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 rounded-lg text-primary"><Users size={20} /></div>
-            <div><p className="text-sm text-muted-foreground">Total Aktif</p><p className="text-2xl font-bold">{totalAktif}</p></div>
-          </div>
-        </CardContent></Card>
-        <Card className="shadow-sm"><CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-100 rounded-lg text-green-600"><GraduationCap size={20} /></div>
-            <div><p className="text-sm text-muted-foreground">Hadir Hari Ini</p><p className="text-2xl font-bold">{totalHadir}</p></div>
-          </div>
-        </CardContent></Card>
-        <Card className="shadow-sm"><CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><GraduationCap size={20} /></div>
-            <div>
-              <p className="text-sm text-muted-foreground">Jangkauan Hari Ini</p>
-              <p className="text-2xl font-bold">{totalAktif > 0 ? Math.round((totalHadir / totalAktif) * 100) : 0}%</p>
-            </div>
-          </div>
-        </CardContent></Card>
+      <div className="grid gap-4 sm:grid-cols-3 animate-slide-up">
+        {[
+          { label: "Total Aktif", value: totalAktif, icon: Users, iconBg: "bg-primary/10 text-primary", valueColor: "text-foreground", delay: "0s" },
+          { label: "Hadir Hari Ini", value: totalHadir, icon: GraduationCap, iconBg: "bg-green-100 text-green-600", valueColor: "text-green-700", delay: "0.05s" },
+          { label: "Jangkauan", value: `${jangkauan}%`, icon: School, iconBg: "bg-blue-100 text-blue-600", valueColor: "text-blue-700", delay: "0.1s" },
+        ].map(stat => (
+          <Card key={stat.label} className="shadow-sm animate-slide-up" style={{ animationDelay: stat.delay }}>
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center gap-3">
+                <div className={`stat-card-icon w-11 h-11 ${stat.iconBg}`}>
+                  <stat.icon size={19} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                  <p className={`text-2xl font-bold ${stat.valueColor}`}>{stat.value}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {pieData.length > 0 && (
-        <Card className="shadow-sm">
-          <CardHeader><CardTitle>Distribusi per Wilayah</CardTitle></CardHeader>
+        <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.15s' }}>
+          <CardHeader>
+            <CardTitle className="text-base">Distribusi per Wilayah</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={75}
+                    innerRadius={35}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    labelLine={true}
+                  >
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(v: number) => [`${v} siswa`, "Total"]} contentStyle={{ borderRadius: '10px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -115,72 +129,112 @@ export default function PenerimaManfaatPage() {
         </Card>
       )}
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.2s' }}>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input placeholder="Cari nama, sekolah, wilayah..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users size={16} className="text-primary" />
+              Daftar Penerima
+              <Badge variant="secondary" className="text-xs ml-1">{filtered.length}</Badge>
+            </CardTitle>
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+              <Input placeholder="Cari nama, sekolah, wilayah..." className="pl-9 h-9 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <span className="text-sm text-muted-foreground">{filtered.length} penerima</span>
           </div>
         </CardHeader>
-        <CardContent>
-          {isLoading ? <Skeleton className="h-48 w-full" /> : (
-            <table className="w-full text-sm">
-              <thead><tr className="border-b">
-                <th className="text-left py-2 font-medium text-muted-foreground">Nama</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Sekolah</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Kelas</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Wilayah</th>
-                <th className="text-center py-2 font-medium text-muted-foreground">Status</th>
-                <th className="text-center py-2 font-medium text-muted-foreground">Aksi</th>
-              </tr></thead>
-              <tbody>
-                {filtered.map(p => (
-                  <tr key={p.id} className="border-b hover:bg-muted/30">
-                    <td className="py-2 font-medium">{p.nama}</td>
-                    <td className="py-2 text-muted-foreground">{p.sekolah}</td>
-                    <td className="py-2">{p.kelas}</td>
-                    <td className="py-2">{p.wilayah}</td>
-                    <td className="py-2 text-center">
-                      <Badge variant={p.is_aktif ? "default" : "secondary"} className="text-xs">{p.is_aktif ? "Aktif" : "Nonaktif"}</Badge>
-                    </td>
-                    <td className="py-2 text-center">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Pencil size={14} /></Button>
-                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDelId(p.id)}><Trash2 size={14} /></Button>
-                    </td>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 gap-3">
+              <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+                <Users size={22} className="text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {search ? "Penerima tidak ditemukan" : "Belum ada data penerima manfaat"}
+              </p>
+              {!search && <Button size="sm" onClick={openAdd} className="gap-1.5"><Plus size={14} />Tambah Penerima</Button>}
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/20">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Nama</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Sekolah</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Kelas</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden lg:table-cell">Wilayah</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map(p => (
+                    <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-4 font-medium">{p.nama}</td>
+                      <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{p.sekolah}</td>
+                      <td className="py-3 px-4 hidden md:table-cell text-sm">{p.kelas}</td>
+                      <td className="py-3 px-4 hidden lg:table-cell text-sm">{p.wilayah}</td>
+                      <td className="py-3 px-4 text-center">
+                        <Badge variant={p.is_aktif ? "default" : "secondary"} className="text-xs">
+                          {p.is_aktif ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(p)}><Pencil size={13} /></Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(p.id)}><Trash2 size={13} /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editing ? "Edit Penerima" : "Tambah Penerima Manfaat"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1"><Label>Nama Lengkap</Label><Input value={form.nama} onChange={e => setForm(f => ({...f, nama: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Sekolah</Label><Input value={form.sekolah} onChange={e => setForm(f => ({...f, sekolah: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Kelas</Label><Input value={form.kelas} onChange={e => setForm(f => ({...f, kelas: e.target.value}))} placeholder="Kelas 1, Kelas 2, dst" /></div>
-            <div className="space-y-1"><Label>Wilayah</Label><Input value={form.wilayah} onChange={e => setForm(f => ({...f, wilayah: e.target.value}))} /></div>
+            <div className="space-y-1.5"><Label>Nama Lengkap</Label>
+              <Input value={form.nama} onChange={e => setForm(f => ({...f, nama: e.target.value}))} placeholder="Ahmad Budi" />
+            </div>
+            <div className="space-y-1.5"><Label>Sekolah</Label>
+              <Input value={form.sekolah} onChange={e => setForm(f => ({...f, sekolah: e.target.value}))} placeholder="SD Negeri 01" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Kelas</Label>
+                <Input value={form.kelas} onChange={e => setForm(f => ({...f, kelas: e.target.value}))} placeholder="Kelas 4" />
+              </div>
+              <div className="space-y-1.5"><Label>Wilayah</Label>
+                <Input value={form.wilayah} onChange={e => setForm(f => ({...f, wilayah: e.target.value}))} placeholder="Jakarta Selatan" />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>{save.isPending ? "Menyimpan..." : "Simpan"}</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.sekolah}>
+              {save.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={delId !== null} onOpenChange={() => setDelId(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>Hapus Penerima</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Yakin ingin menghapus data penerima manfaat ini?</p>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus data penerima <span className="font-semibold text-foreground">{(data ?? []).find(p => p.id === delId)?.nama}</span>?
+          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && del.mutate(delId)}>Hapus</Button>
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>
+              {del.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

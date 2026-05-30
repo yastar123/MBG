@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search } from "lucide-react";
+import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };
@@ -21,11 +21,16 @@ const roleLabel: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  super_admin: "bg-red-100 text-red-700", admin_yayasan: "bg-purple-100 text-purple-700",
-  admin_dapur: "bg-blue-100 text-blue-700", kepala_dapur: "bg-green-100 text-green-700",
-  staff_dapur: "bg-teal-100 text-teal-700", admin_gudang: "bg-amber-100 text-amber-700",
-  staff_gudang: "bg-orange-100 text-orange-700", driver: "bg-pink-100 text-pink-700",
-  verifikator: "bg-indigo-100 text-indigo-700", supplier: "bg-gray-100 text-gray-700",
+  super_admin: "bg-red-100 text-red-700",
+  admin_yayasan: "bg-purple-100 text-purple-700",
+  admin_dapur: "bg-blue-100 text-blue-700",
+  kepala_dapur: "bg-green-100 text-green-700",
+  staff_dapur: "bg-teal-100 text-teal-700",
+  admin_gudang: "bg-amber-100 text-amber-700",
+  staff_gudang: "bg-orange-100 text-orange-700",
+  driver: "bg-pink-100 text-pink-700",
+  verifikator: "bg-indigo-100 text-indigo-700",
+  supplier: "bg-gray-100 text-gray-700",
 };
 
 const emptyForm = { nama: "", email: "", password_hash: "", role: "staff_dapur", dapur_id: "", no_hp: "" };
@@ -45,7 +50,8 @@ export default function PenggunaPage() {
       const url = editing ? `/api/users/${editing.id}` : "/api/users";
       const method = editing ? "PATCH" : "POST";
       const payload: Record<string, unknown> = { ...form };
-      if (form.dapur_id) payload.dapur_id = parseInt(form.dapur_id); else payload.dapur_id = null;
+      if (form.dapur_id) payload.dapur_id = parseInt(form.dapur_id);
+      else payload.dapur_id = null;
       if (!editing) payload.password_hash = form.password_hash;
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error();
@@ -63,101 +69,171 @@ export default function PenggunaPage() {
   }
 
   const filtered = (data ?? []).filter(u =>
+    !search ||
     u.nama.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.role.toLowerCase().includes(search.toLowerCase())
+    (roleLabel[u.role] ?? u.role).toLowerCase().includes(search.toLowerCase())
   );
 
+  const activeCount = (data ?? []).filter(u => u.is_active).length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pengguna</h1>
-          <p className="text-muted-foreground text-sm">Kelola akun dan hak akses pengguna sistem</p>
+          <h1 className="page-heading">Pengguna</h1>
+          <p className="page-subheading">Kelola akun dan hak akses pengguna sistem</p>
         </div>
-        <Button onClick={openAdd} className="gap-2"><Plus size={16} /> Tambah Pengguna</Button>
+        <Button onClick={openAdd} className="gap-2 shrink-0"><Plus size={16} /> Tambah Pengguna</Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-5">
-        {Object.entries(roleLabel).map(([role, label]) => {
+      {!isLoading && data && data.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
+          <div className="bg-muted/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold">{data.length}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Total Pengguna</p>
+          </div>
+          <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-primary">{activeCount}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Aktif</p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-muted-foreground">{data.length - activeCount}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Nonaktif</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-5 animate-slide-up" style={{ animationDelay: '0.05s' }}>
+        {Object.entries(roleLabel).slice(0, 5).map(([role, label]) => {
           const count = (data ?? []).filter(u => u.role === role).length;
           return (
             <Card key={role} className="shadow-sm">
-              <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-2xl font-bold">{count}</p>
-                <p className="text-xs text-muted-foreground mt-1">{label}</p>
+              <CardContent className="pt-3.5 pb-3.5 text-center">
+                <p className="text-xl font-bold">{count}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</p>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.1s' }}>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-              <Input placeholder="Cari nama, email, role..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1 max-w-xs w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+              <Input
+                placeholder="Cari nama, email, role..."
+                className="pl-9 h-9 text-sm"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
             </div>
+            <span className="text-sm text-muted-foreground shrink-0">{filtered.length} pengguna</span>
           </div>
         </CardHeader>
-        <CardContent>
-          {isLoading ? <Skeleton className="h-48 w-full" /> : (
-            <table className="w-full text-sm">
-              <thead><tr className="border-b">
-                <th className="text-left py-2 font-medium text-muted-foreground">Nama</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Email</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Role</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Dapur</th>
-                <th className="text-center py-2 font-medium text-muted-foreground">Status</th>
-                <th className="text-center py-2 font-medium text-muted-foreground">Aksi</th>
-              </tr></thead>
-              <tbody>
-                {filtered.map(u => (
-                  <tr key={u.id} className="border-b hover:bg-muted/30">
-                    <td className="py-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                          {u.nama.charAt(0)}
-                        </div>
-                        <span className="font-medium">{u.nama}</span>
-                      </div>
-                    </td>
-                    <td className="py-2 text-muted-foreground">{u.email}</td>
-                    <td className="py-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColors[u.role] ?? "bg-gray-100 text-gray-700"}`}>
-                        {roleLabel[u.role] ?? u.role}
-                      </span>
-                    </td>
-                    <td className="py-2 text-muted-foreground text-xs">{dapurList?.find(d => d.id === u.dapur_id)?.nama ?? "-"}</td>
-                    <td className="py-2 text-center">
-                      <Badge variant={u.is_active ? "default" : "secondary"} className="text-xs">{u.is_active ? "Aktif" : "Nonaktif"}</Badge>
-                    </td>
-                    <td className="py-2 text-center">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(u)}><Pencil size={14} /></Button>
-                    </td>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 gap-3">
+              <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+                <Users size={22} className="text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {search ? "Pengguna tidak ditemukan" : "Belum ada pengguna"}
+              </p>
+              {!search && <Button size="sm" onClick={openAdd} className="gap-1.5"><Plus size={14} />Tambah Pengguna</Button>}
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/20">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Nama</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Role</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden lg:table-cell">Dapur</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map(u => (
+                    <tr key={u.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                            {u.nama.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium leading-tight">{u.nama}</p>
+                            <p className="text-xs text-muted-foreground sm:hidden">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{u.email}</td>
+                      <td className="py-3 px-4">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColors[u.role] ?? "bg-gray-100 text-gray-700"}`}>
+                          {roleLabel[u.role] ?? u.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground text-xs hidden lg:table-cell">
+                        {dapurList?.find(d => d.id === u.dapur_id)?.nama ?? "—"}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Badge variant={u.is_active ? "default" : "secondary"} className="text-xs">
+                          {u.is_active ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(u)}>
+                          <Pencil size={13} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Edit Pengguna" : "Tambah Pengguna"}</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck size={18} className="text-primary" />
+              {editing ? "Edit Pengguna" : "Tambah Pengguna"}
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1"><Label>Nama Lengkap</Label><Input value={form.nama} onChange={e => setForm(f => ({...f, nama: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} /></div>
-            {!editing && <div className="space-y-1"><Label>Password</Label><Input type="password" value={form.password_hash} onChange={e => setForm(f => ({...f, password_hash: e.target.value}))} /></div>}
-            <div className="space-y-1"><Label>Role</Label>
-              <Select value={form.role} onValueChange={v => setForm(f => ({...f, role: v}))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{Object.entries(roleLabel).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
-              </Select>
+            <div className="space-y-1.5"><Label>Nama Lengkap</Label>
+              <Input value={form.nama} onChange={e => setForm(f => ({...f, nama: e.target.value}))} placeholder="Budi Santoso" />
             </div>
-            <div className="space-y-1"><Label>Dapur (opsional)</Label>
+            <div className="space-y-1.5"><Label>Email</Label>
+              <Input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="budi@mbg.id" />
+            </div>
+            {!editing && (
+              <div className="space-y-1.5">
+                <Label>Password</Label>
+                <Input type="password" value={form.password_hash} onChange={e => setForm(f => ({...f, password_hash: e.target.value}))} placeholder="Minimal 6 karakter" />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Role</Label>
+                <Select value={form.role} onValueChange={v => setForm(f => ({...f, role: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(roleLabel).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label>No. HP <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+                <Input value={form.no_hp} onChange={e => setForm(f => ({...f, no_hp: e.target.value}))} placeholder="08xxxxxxxxxx" />
+              </div>
+            </div>
+            <div className="space-y-1.5"><Label>Dapur <span className="text-muted-foreground text-xs">(opsional)</span></Label>
               <Select value={form.dapur_id} onValueChange={v => setForm(f => ({...f, dapur_id: v}))}>
                 <SelectTrigger><SelectValue placeholder="Tidak terkait dapur" /></SelectTrigger>
                 <SelectContent>
@@ -166,11 +242,12 @@ export default function PenggunaPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1"><Label>No. HP</Label><Input value={form.no_hp} onChange={e => setForm(f => ({...f, no_hp: e.target.value}))} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>{save.isPending ? "Menyimpan..." : "Simpan"}</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password_hash)}>
+              {save.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

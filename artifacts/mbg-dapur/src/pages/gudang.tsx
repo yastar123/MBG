@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, AlertTriangle, Plus, Pencil, Trash2 } from "lucide-react";
+import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -36,16 +36,30 @@ export default function GudangPage() {
       if (!r.ok) throw new Error();
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/bahan-baku"] }); qc.invalidateQueries({ queryKey: ["/api/stok"] }); toast({ title: "Bahan baku disimpan" }); setOpenBahan(false); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/bahan-baku"] });
+      qc.invalidateQueries({ queryKey: ["/api/stok"] });
+      toast({ title: "Bahan baku disimpan" });
+      setOpenBahan(false);
+    },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
 
   const delBahan = useMutation({
-    mutationFn: async (id: number) => { await fetch(`/api/bahan-baku/${id}`, { method: "DELETE" }); },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/bahan-baku"] }); qc.invalidateQueries({ queryKey: ["/api/stok"] }); toast({ title: "Bahan baku dihapus" }); },
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/bahan-baku/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/bahan-baku"] });
+      qc.invalidateQueries({ queryKey: ["/api/stok"] });
+      toast({ title: "Bahan baku dihapus" });
+    },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
   const alertItems = stok?.filter(s => s.kuantitas <= s.stok_minimum) ?? [];
+  const amanItems = stok?.filter(s => s.kuantitas > s.stok_minimum * 1.5) ?? [];
 
   function openAddBahan() { setEditBahan(null); setFormBahan(emptyBahan); setOpenBahan(true); }
   function openEditBahan(b: BahanBaku) {
@@ -54,24 +68,50 @@ export default function GudangPage() {
     setOpenBahan(true);
   }
 
+  function getStokStatus(s: Stok) {
+    if (s.kuantitas <= s.stok_minimum) return { label: "Rendah", variant: "destructive" as const, bar: "bg-destructive" };
+    if (s.kuantitas <= s.stok_minimum * 1.5) return { label: "Hampir Habis", variant: "outline" as const, bar: "bg-amber-400" };
+    return { label: "Aman", variant: "default" as const, bar: "bg-primary" };
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Gudang</h1>
-        <p className="text-muted-foreground text-sm">Manajemen bahan baku dan stok gudang</p>
+    <div className="space-y-8">
+      <div className="animate-fade-in">
+        <h1 className="page-heading">Gudang</h1>
+        <p className="page-subheading">Manajemen bahan baku dan stok gudang</p>
       </div>
 
+      {!loadingStok && stok && stok.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
+          {[
+            { label: "Total Bahan", value: stok.length, icon: Package, bg: "bg-muted/50", color: "text-foreground" },
+            { label: "Stok Rendah", value: alertItems.length, icon: TrendingDown, bg: alertItems.length > 0 ? "bg-destructive/5 border border-destructive/20" : "bg-muted/50", color: alertItems.length > 0 ? "text-destructive" : "text-muted-foreground" },
+            { label: "Stok Aman", value: amanItems.length, icon: CheckCircle, bg: "bg-primary/5 border border-primary/10", color: "text-primary" },
+          ].map(stat => (
+            <div key={stat.label} className={`${stat.bg} rounded-xl p-4 text-center`}>
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {alertItems.length > 0 && (
-        <Card className="border-destructive/40 bg-destructive/5 shadow-sm">
+        <Card className="border-destructive/30 bg-destructive/5 shadow-sm animate-slide-up">
           <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle size={16} className="text-destructive" />
-              <span className="font-semibold text-destructive text-sm">{alertItems.length} bahan baku di bawah batas minimum</span>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 bg-destructive/15 rounded-lg flex items-center justify-center">
+                <AlertTriangle size={14} className="text-destructive" />
+              </div>
+              <span className="font-semibold text-destructive text-sm">
+                {alertItems.length} bahan baku di bawah batas minimum
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {alertItems.map(s => (
                 <Badge key={s.bahan_baku_id} variant="destructive" className="text-xs">
-                  {s.bahan_baku_nama}: {s.kuantitas} {s.satuan} (min {s.stok_minimum})
+                  {s.bahan_baku_nama}: {s.kuantitas} {s.satuan}
+                  <span className="opacity-70 ml-1">(min {s.stok_minimum})</span>
                 </Badge>
               ))}
             </div>
@@ -79,122 +119,189 @@ export default function GudangPage() {
         </Card>
       )}
 
-      <Tabs defaultValue="stok">
-        <TabsList><TabsTrigger value="stok">Stok Saat Ini</TabsTrigger><TabsTrigger value="bahan">Bahan Baku</TabsTrigger><TabsTrigger value="penerimaan">Penerimaan</TabsTrigger></TabsList>
+      <Tabs defaultValue="stok" className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="stok">Stok Saat Ini</TabsTrigger>
+          <TabsTrigger value="bahan">Bahan Baku</TabsTrigger>
+          <TabsTrigger value="penerimaan">Penerimaan</TabsTrigger>
+        </TabsList>
 
-        <TabsContent value="stok" className="mt-4">
+        <TabsContent value="stok">
           <Card className="shadow-sm">
-            <CardHeader><CardTitle className="flex items-center gap-2"><Package size={18} className="text-primary" /> Stok Gudang</CardTitle></CardHeader>
-            <CardContent>
-              {loadingStok ? <Skeleton className="h-48 w-full" /> : (
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b">
-                    <th className="text-left py-2 font-medium text-muted-foreground">Bahan Baku</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Stok</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Minimum</th>
-                    <th className="text-center py-2 font-medium text-muted-foreground">Status</th>
-                  </tr></thead>
-                  <tbody>
-                    {(stok ?? []).map(s => (
-                      <tr key={s.bahan_baku_id} className="border-b hover:bg-muted/30">
-                        <td className="py-2 font-medium">{s.bahan_baku_nama}</td>
-                        <td className="py-2 text-right">{s.kuantitas} {s.satuan}</td>
-                        <td className="py-2 text-right text-muted-foreground">{s.stok_minimum} {s.satuan}</td>
-                        <td className="py-2 text-center">
-                          {s.kuantitas <= s.stok_minimum
-                            ? <Badge variant="destructive" className="text-xs">Rendah</Badge>
-                            : s.kuantitas <= s.stok_minimum * 1.5
-                            ? <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">Hampir Habis</Badge>
-                            : <Badge variant="default" className="text-xs">Aman</Badge>}
-                        </td>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Package size={16} className="text-primary" /> Stok Gudang
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingStok ? (
+                <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+              ) : (stok ?? []).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+                    <Package size={22} className="text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Belum ada data stok</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/20">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Bahan Baku</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs">Stok</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Minimum</th>
+                        <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {(stok ?? []).map(s => {
+                        const st = getStokStatus(s);
+                        return (
+                          <tr key={s.bahan_baku_id} className="border-b hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4 font-medium">{s.bahan_baku_nama}</td>
+                            <td className="py-3 px-4 text-right font-semibold">{s.kuantitas} <span className="text-muted-foreground font-normal text-xs">{s.satuan}</span></td>
+                            <td className="py-3 px-4 text-right text-muted-foreground hidden sm:table-cell text-xs">{s.stok_minimum} {s.satuan}</td>
+                            <td className="py-3 px-4 text-center">
+                              <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="bahan" className="mt-4">
+        <TabsContent value="bahan">
           <Card className="shadow-sm">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Daftar Bahan Baku</CardTitle>
-                <Button size="sm" onClick={openAddBahan} className="gap-1"><Plus size={14} /> Tambah</Button>
+                <CardTitle className="text-base">Daftar Bahan Baku</CardTitle>
+                <Button size="sm" onClick={openAddBahan} className="gap-1.5"><Plus size={14} /> Tambah</Button>
               </div>
             </CardHeader>
-            <CardContent>
-              {loadingBahan ? <Skeleton className="h-48 w-full" /> : (
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b">
-                    <th className="text-left py-2 font-medium text-muted-foreground">Nama</th>
-                    <th className="text-left py-2 font-medium text-muted-foreground">Satuan</th>
-                    <th className="text-left py-2 font-medium text-muted-foreground">Kategori</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Minimum</th>
-                    <th className="text-center py-2 font-medium text-muted-foreground">Aksi</th>
-                  </tr></thead>
-                  <tbody>
-                    {(bahan ?? []).map(b => (
-                      <tr key={b.id} className="border-b hover:bg-muted/30">
-                        <td className="py-2 font-medium">{b.nama}</td>
-                        <td className="py-2">{b.satuan}</td>
-                        <td className="py-2 text-muted-foreground">{b.kategori ?? "-"}</td>
-                        <td className="py-2 text-right">{b.stok_minimum}</td>
-                        <td className="py-2 text-center flex items-center justify-center gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => openEditBahan(b)}><Pencil size={14} /></Button>
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => delBahan.mutate(b.id)}><Trash2 size={14} /></Button>
-                        </td>
+            <CardContent className="p-0">
+              {loadingBahan ? (
+                <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+              ) : (bahan ?? []).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+                    <Package size={22} className="text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Belum ada bahan baku</p>
+                  <Button size="sm" onClick={openAddBahan} className="gap-1.5"><Plus size={14} />Tambah Bahan</Button>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/20">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Nama</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Satuan</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Kategori</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs">Min. Stok</th>
+                        <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {(bahan ?? []).map(b => (
+                        <tr key={b.id} className="border-b hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 font-medium">{b.nama}</td>
+                          <td className="py-3 px-4 hidden sm:table-cell text-muted-foreground">{b.satuan}</td>
+                          <td className="py-3 px-4 hidden md:table-cell">
+                            {b.kategori ? (
+                              <Badge variant="secondary" className="text-xs">{b.kategori}</Badge>
+                            ) : <span className="text-muted-foreground text-xs">—</span>}
+                          </td>
+                          <td className="py-3 px-4 text-right">{b.stok_minimum}</td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditBahan(b)}><Pencil size={13} /></Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => delBahan.mutate(b.id)}><Trash2 size={13} /></Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="penerimaan" className="mt-4">
+        <TabsContent value="penerimaan">
           <Card className="shadow-sm">
-            <CardHeader><CardTitle>Riwayat Penerimaan Bahan</CardTitle></CardHeader>
-            <CardContent>
-              <table className="w-full text-sm">
-                <thead><tr className="border-b">
-                  <th className="text-left py-2 font-medium text-muted-foreground">Tanggal</th>
-                  <th className="text-left py-2 font-medium text-muted-foreground">Supplier</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Jumlah Item</th>
-                  <th className="text-center py-2 font-medium text-muted-foreground">Status</th>
-                </tr></thead>
-                <tbody>
-                  {(penerimaan ?? []).map(p => (
-                    <tr key={p.id} className="border-b hover:bg-muted/30">
-                      <td className="py-2">{p.tanggal}</td>
-                      <td className="py-2">{p.supplier_nama ?? "-"}</td>
-                      <td className="py-2 text-right">{p.total_item ?? 0}</td>
-                      <td className="py-2 text-center">
-                        <Badge variant={p.status === "diterima" ? "default" : "secondary"} className="text-xs capitalize">{p.status}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <CardHeader>
+              <CardTitle className="text-base">Riwayat Penerimaan Bahan</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {(penerimaan ?? []).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+                    <Package size={22} className="text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Belum ada riwayat penerimaan</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/20">
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Tanggal</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Supplier</th>
+                        <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Jumlah Item</th>
+                        <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(penerimaan ?? []).map(p => (
+                        <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 text-xs text-muted-foreground">{p.tanggal}</td>
+                          <td className="py-3 px-4 font-medium">{p.supplier_nama ?? "—"}</td>
+                          <td className="py-3 px-4 text-right hidden sm:table-cell">{p.total_item ?? 0}</td>
+                          <td className="py-3 px-4 text-center">
+                            <Badge variant={p.status === "diterima" ? "default" : "secondary"} className="text-xs capitalize">{p.status}</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
       <Dialog open={openBahan} onOpenChange={setOpenBahan}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editBahan ? "Edit Bahan Baku" : "Tambah Bahan Baku"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1"><Label>Nama</Label><Input value={formBahan.nama} onChange={e => setFormBahan(f => ({...f, nama: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Satuan</Label><Input value={formBahan.satuan} onChange={e => setFormBahan(f => ({...f, satuan: e.target.value}))} placeholder="kg, liter, butir, dll" /></div>
-            <div className="space-y-1"><Label>Kategori</Label><Input value={formBahan.kategori} onChange={e => setFormBahan(f => ({...f, kategori: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Stok Minimum</Label><Input type="number" value={formBahan.stok_minimum} onChange={e => setFormBahan(f => ({...f, stok_minimum: e.target.value}))} /></div>
+            <div className="space-y-1.5"><Label>Nama Bahan</Label>
+              <Input value={formBahan.nama} onChange={e => setFormBahan(f => ({...f, nama: e.target.value}))} placeholder="Beras, Ayam, Telur..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Satuan</Label>
+                <Input value={formBahan.satuan} onChange={e => setFormBahan(f => ({...f, satuan: e.target.value}))} placeholder="kg, liter, butir" />
+              </div>
+              <div className="space-y-1.5"><Label>Stok Minimum</Label>
+                <Input type="number" value={formBahan.stok_minimum} onChange={e => setFormBahan(f => ({...f, stok_minimum: e.target.value}))} placeholder="50" />
+              </div>
+            </div>
+            <div className="space-y-1.5"><Label>Kategori <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Input value={formBahan.kategori} onChange={e => setFormBahan(f => ({...f, kategori: e.target.value}))} placeholder="Protein, Karbohidrat, Sayuran..." />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenBahan(false)}>Batal</Button>
-            <Button onClick={() => saveBahan.mutate()} disabled={saveBahan.isPending}>{saveBahan.isPending ? "Menyimpan..." : "Simpan"}</Button>
+            <Button onClick={() => saveBahan.mutate()} disabled={saveBahan.isPending || !formBahan.nama || !formBahan.satuan}>
+              {saveBahan.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

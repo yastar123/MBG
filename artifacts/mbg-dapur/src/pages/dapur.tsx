@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChefHat, Plus, Pencil, Trash2, MapPin, Users } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, MapPin, Users, UtensilsCrossed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Dapur = {
@@ -44,7 +44,7 @@ export default function DapurPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/dapur"] });
-      toast({ title: editing ? "Dapur diperbarui" : "Dapur ditambahkan" });
+      toast({ title: editing ? "Dapur diperbarui" : "Dapur berhasil ditambahkan" });
       setOpen(false);
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
@@ -52,13 +52,15 @@ export default function DapurPage() {
 
   const del = useMutation({
     mutationFn: async (id: number) => {
-      await fetch(`/api/dapur/${id}`, { method: "DELETE" });
+      const r = await fetch(`/api/dapur/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/dapur"] });
       toast({ title: "Dapur dihapus" });
       setDelId(null);
     },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
@@ -68,51 +70,102 @@ export default function DapurPage() {
     setOpen(true);
   }
 
+  const aktifCount = (data ?? []).filter(d => d.status === "aktif").length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manajemen Dapur</h1>
-          <p className="text-muted-foreground text-sm">Kelola semua unit dapur MBG</p>
+          <h1 className="page-heading">Manajemen Dapur</h1>
+          <p className="page-subheading">Kelola semua unit dapur MBG</p>
         </div>
-        <Button onClick={openAdd} className="gap-2"><Plus size={16} /> Tambah Dapur</Button>
+        <Button onClick={openAdd} className="gap-2 shrink-0">
+          <Plus size={16} /> Tambah Dapur
+        </Button>
       </div>
 
+      {!isLoading && data && data.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
+          {[
+            { label: "Total Dapur", value: data.length, color: "text-foreground", bg: "bg-muted/50" },
+            { label: "Aktif", value: aktifCount, color: "text-primary", bg: "bg-primary/5 border border-primary/10" },
+            { label: "Nonaktif", value: data.length - aktifCount, color: "text-muted-foreground", bg: "bg-muted/50" },
+          ].map(stat => (
+            <div key={stat.label} className={`${stat.bg} rounded-xl p-4 text-center`}>
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-40" />)}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-44 rounded-xl" />)}
+        </div>
+      ) : (data ?? []).length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+          <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
+            <ChefHat size={28} className="text-muted-foreground" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-1">Belum ada dapur</h3>
+          <p className="text-sm text-muted-foreground mb-4">Mulai dengan menambahkan unit dapur pertama</p>
+          <Button onClick={openAdd} size="sm" className="gap-2"><Plus size={14} />Tambah Dapur</Button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {(data ?? []).map((d) => (
-            <Card key={d.id} className="shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-primary/10 rounded-md text-primary"><ChefHat size={18} /></div>
-                    <CardTitle className="text-base">{d.nama}</CardTitle>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {(data ?? []).map((d, idx) => (
+            <Card
+              key={d.id}
+              className="shadow-sm card-hover animate-slide-up"
+              style={{ animationDelay: `${idx * 0.05}s` }}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary shrink-0">
+                      <ChefHat size={16} />
+                    </div>
+                    <CardTitle className="text-sm font-semibold leading-tight">{d.nama}</CardTitle>
                   </div>
-                  <Badge variant={d.status === "aktif" ? "default" : "secondary"} className="text-xs">
+                  <Badge
+                    variant={d.status === "aktif" ? "default" : "secondary"}
+                    className="text-xs shrink-0"
+                  >
                     {d.status}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-2 text-sm pt-0">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin size={14} />
-                  <span>{d.lokasi}</span>
+                  <MapPin size={13} className="shrink-0" />
+                  <span className="truncate">{d.lokasi}</span>
                 </div>
                 {d.kepala_dapur_nama && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users size={14} />
-                    <span>{d.kepala_dapur_nama}</span>
+                    <Users size={13} className="shrink-0" />
+                    <span className="truncate">{d.kepala_dapur_nama}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <span className="font-medium text-primary">{d.kapasitas_porsi.toLocaleString("id-ID")} porsi/hari</span>
+                {d.alamat && (
+                  <div className="flex items-start gap-2 text-muted-foreground">
+                    <MapPin size={13} className="shrink-0 mt-0.5" />
+                    <span className="text-xs leading-relaxed">{d.alamat}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <div className="flex items-center gap-1.5">
+                    <UtensilsCrossed size={13} className="text-primary" />
+                    <span className="font-semibold text-primary text-sm">{d.kapasitas_porsi.toLocaleString("id-ID")}</span>
+                    <span className="text-xs text-muted-foreground">porsi/hari</span>
+                  </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(d)}><Pencil size={14} /></Button>
-                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDelId(d.id)}><Trash2 size={14} /></Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(d)}>
+                      <Pencil size={13} />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(d.id)}>
+                      <Trash2 size={13} />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -122,23 +175,61 @@ export default function DapurPage() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Edit Dapur" : "Tambah Dapur"}</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Dapur" : "Tambah Dapur Baru"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1"><Label>Nama Dapur</Label><Input value={form.nama} onChange={e => setForm(f => ({...f, nama: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Lokasi / Wilayah</Label><Input value={form.lokasi} onChange={e => setForm(f => ({...f, lokasi: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Alamat Lengkap</Label><Input value={form.alamat} onChange={e => setForm(f => ({...f, alamat: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Kapasitas (porsi/hari)</Label><Input type="number" value={form.kapasitas_porsi} onChange={e => setForm(f => ({...f, kapasitas_porsi: e.target.value}))} /></div>
-            <div className="space-y-1"><Label>Status</Label>
+            <div className="space-y-1.5">
+              <Label>Nama Dapur</Label>
+              <Input
+                value={form.nama}
+                onChange={e => setForm(f => ({...f, nama: e.target.value}))}
+                placeholder="Dapur Ciputat Timur"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Lokasi / Wilayah</Label>
+              <Input
+                value={form.lokasi}
+                onChange={e => setForm(f => ({...f, lokasi: e.target.value}))}
+                placeholder="Tangerang Selatan"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Alamat Lengkap <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Input
+                value={form.alamat}
+                onChange={e => setForm(f => ({...f, alamat: e.target.value}))}
+                placeholder="Jl. Contoh No. 1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Kapasitas (porsi/hari)</Label>
+              <Input
+                type="number"
+                value={form.kapasitas_porsi}
+                onChange={e => setForm(f => ({...f, kapasitas_porsi: e.target.value}))}
+                placeholder="500"
+                min={1}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
               <Select value={form.status} onValueChange={v => setForm(f => ({...f, status: v}))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="aktif">Aktif</SelectItem><SelectItem value="nonaktif">Nonaktif</SelectItem></SelectContent>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="nonaktif">Nonaktif</SelectItem>
+                </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.lokasi}>
               {save.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>
@@ -146,12 +237,16 @@ export default function DapurPage() {
       </Dialog>
 
       <Dialog open={delId !== null} onOpenChange={() => setDelId(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>Hapus Dapur</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Yakin ingin menghapus dapur ini? Tindakan tidak dapat dibatalkan.</p>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus dapur <span className="font-semibold text-foreground">{(data ?? []).find(d => d.id === delId)?.nama}</span>? Tindakan ini tidak dapat dibatalkan.
+          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>Hapus</Button>
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>
+              {del.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
