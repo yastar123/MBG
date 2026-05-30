@@ -122,9 +122,11 @@ export default function Login() {
           </CardContent>
         </Card>
         
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          Untuk keperluan demo, gunakan email: admin@mbg.id
-        </p>
+        <div className="mt-6 p-3 bg-muted/50 rounded-lg border border-border/50 text-center">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Akun Demo</p>
+          <p className="text-sm font-mono text-foreground">admin@mbg.id</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Password: <span className="font-mono text-foreground">password123</span></p>
+        </div>
       </div>
     </div>
   );

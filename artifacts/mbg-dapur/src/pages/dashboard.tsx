@@ -106,21 +106,60 @@ export default function Dashboard() {
 
         <Card className="md:col-span-3 lg:col-span-2 shadow-sm">
           <CardHeader>
-            <CardTitle>Aktivitas Terkini</CardTitle>
+            <CardTitle>Ringkasan Hari Ini</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-8">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <Package size={16} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <Utensils size={14} />
                   </div>
-                  <div className="space-y-1 overflow-hidden">
-                    <p className="text-sm font-medium leading-none truncate">Pengiriman ke SD N 01 selesai</p>
-                    <p className="text-xs text-muted-foreground">Oleh Driver Budi • 10 menit yang lalu</p>
+                  <div>
+                    <p className="text-sm font-medium">Total Produksi</p>
+                    <p className="text-xs text-muted-foreground">Porsi diproduksi hari ini</p>
                   </div>
                 </div>
-              ))}
+                <span className="font-bold text-primary text-lg">{summary?.total_porsi_hari_ini?.toLocaleString("id-ID") ?? "-"}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <ChefHat size={14} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Dapur Aktif</p>
+                    <p className="text-xs text-muted-foreground">Beroperasi hari ini</p>
+                  </div>
+                </div>
+                <span className="font-bold text-lg">{summary?.total_dapur_aktif ?? "-"}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 shrink-0">
+                    <Truck size={14} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Pengiriman Selesai</p>
+                    <p className="text-xs text-muted-foreground">Dari {summary?.total_pengiriman_hari_ini ?? 0} total pengiriman</p>
+                  </div>
+                </div>
+                <span className="font-bold text-lg text-green-700">{summary?.pengiriman_selesai ?? "-"}</span>
+              </div>
+              {(summary?.stok_alert_count ?? 0) > 0 && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center text-destructive shrink-0">
+                      <AlertTriangle size={14} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Peringatan Stok</p>
+                      <p className="text-xs text-muted-foreground">Bahan baku hampir habis</p>
+                    </div>
+                  </div>
+                  <span className="font-bold text-lg text-destructive">{summary?.stok_alert_count}</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

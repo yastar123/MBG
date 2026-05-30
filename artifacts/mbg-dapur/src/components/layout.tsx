@@ -142,12 +142,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
         
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="h-14 border-b bg-card flex items-center px-4 shrink-0 md:hidden">
-            <SidebarTrigger />
-            <div className="font-bold ml-4">MBG Dapur</div>
+          <header className="h-14 border-b bg-card/95 backdrop-blur-sm flex items-center px-4 shrink-0 sticky top-0 z-10">
+            <SidebarTrigger className="md:hidden" />
+            <div className="font-bold ml-4 md:hidden text-sm">MBG Dapur</div>
+            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground ml-1">
+              {navGroups.flatMap(g => g.items).find(i => location === i.href || location.startsWith(i.href + "/")) && (
+                <>
+                  <span>MBG Dapur</span>
+                  <span>/</span>
+                  <span className="text-foreground font-medium">
+                    {navGroups.flatMap(g => g.items).find(i => location === i.href || location.startsWith(i.href + "/"))?.name}
+                  </span>
+                </>
+              )}
+            </div>
           </header>
           <div className="flex-1 overflow-auto p-4 md:p-8">
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-6xl animate-slide-up">
               {children}
             </div>
           </div>

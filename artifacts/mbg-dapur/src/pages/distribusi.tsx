@@ -27,7 +27,7 @@ const statusConfig: Record<string, { label: string; color: string; variant: "def
   gagal: { label: "Gagal", color: "text-destructive", variant: "destructive" },
 };
 
-const emptyForm = { dapur_id: "", driver_id: "", tanggal: new Date().toISOString().slice(0, 10), jumlah_porsi: "", tujuan: "", catatan: "" };
+const emptyForm = { dapur_id: "", driver_id: "", tanggal: new Date().toISOString().slice(0, 10), jumlah_porsi: "", tujuan: "", catatan: "", status: "dijadwalkan" };
 
 export default function DistribusiPage() {
   const qc = useQueryClient();
@@ -58,7 +58,7 @@ export default function DistribusiPage() {
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
   function openEdit(p: Pengiriman) {
     setEditing(p);
-    setForm({ dapur_id: String(p.dapur_id), driver_id: p.driver_id?.toString() ?? "", tanggal: p.tanggal, jumlah_porsi: String(p.jumlah_porsi), tujuan: p.tujuan, catatan: p.catatan ?? "" });
+    setForm({ dapur_id: String(p.dapur_id), driver_id: p.driver_id?.toString() ?? "", tanggal: p.tanggal, jumlah_porsi: String(p.jumlah_porsi), tujuan: p.tujuan, catatan: p.catatan ?? "", status: p.status });
     setOpen(true);
   }
 
@@ -174,8 +174,7 @@ export default function DistribusiPage() {
             <div className="space-y-1"><Label>Jumlah Porsi</Label><Input type="number" value={form.jumlah_porsi} onChange={e => setForm(f => ({...f, jumlah_porsi: e.target.value}))} /></div>
             {editing && (
               <div className="space-y-1"><Label>Status</Label>
-                <Select value={form.tujuan !== "" ? editing.status : ""} defaultValue={editing.status}
-                  onValueChange={v => setEditing(ed => ed ? {...ed, status: v} : null)}>
+                <Select value={form.status ?? editing.status} onValueChange={v => setForm(f => ({...f, status: v}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(statusConfig).map(([v, c]) => <SelectItem key={v} value={v}>{c.label}</SelectItem>)}</SelectContent>
                 </Select>

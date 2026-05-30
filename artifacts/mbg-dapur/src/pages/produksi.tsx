@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Utensils, Plus, Pencil, TrendingUp, TrendingDown } from "lucide-react";
+import { Utensils, Plus, Pencil, TrendingUp, TrendingDown, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 type Produksi = {
   id: number; dapur_id: number; menu_id: number; tanggal: string;
@@ -18,6 +19,8 @@ type Produksi = {
 };
 type Dapur = { id: number; nama: string };
 type Menu = { id: number; nama: string; tanggal: string };
+
+const emptyAddForm = { dapur_id: "", menu_id: "", tanggal: new Date().toISOString().slice(0, 10), target_porsi: "" };
 
 const statusLabel: Record<string, string> = {
   dijadwalkan: "Dijadwalkan", proses: "Proses", selesai: "Selesai",
@@ -36,6 +39,26 @@ export default function ProduksiPage() {
   const { data: menuList } = useQuery<Menu[]>({ queryKey: ["/api/menu"], queryFn: async () => (await fetch("/api/menu")).json() });
   const [editItem, setEditItem] = useState<Produksi | null>(null);
   const [editForm, setEditForm] = useState({ realisasi_porsi: "", status: "", catatan_qc: "" });
+  const [openAdd, setOpenAdd] = useState(false);
+  const [addForm, setAddForm] = useState(emptyAddForm);
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/produksi", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(addForm),
+      });
+      if (!r.ok) throw new Error("Gagal menjadwalkan produksi");
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/produksi"] });
+      toast({ title: "Produksi dijadwalkan" });
+      setOpenAdd(false);
+      setAddForm(emptyAddForm);
+    },
+    onError: (e: Error) => toast({ title: "Gagal", description: e.message, variant: "destructive" }),
+  });
 
   const update = useMutation({
     mutationFn: async () => {
@@ -67,29 +90,51 @@ export default function ProduksiPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Produksi</h1>
-        <p className="text-muted-foreground text-sm">Monitor dan catat realisasi produksi harian</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Produksi</h1>
+          <p className="text-muted-foreground text-sm">Monitor dan catat realisasi produksi harian</p>
+        </div>
+        <Button onClick={() => { setAddForm(emptyAddForm); setOpenAdd(true); }} className="gap-2">
+          <Plus size={16} /> Jadwalkan Produksi
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="shadow-sm"><CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Target Hari Ini</p>
-          <p className="text-3xl font-bold text-primary">{totalTarget.toLocaleString("id-ID")}</p>
-          <p className="text-xs text-muted-foreground">porsi dari {todayData.length} sesi</p>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 rounded-lg text-primary"><CalendarDays size={20} /></div>
+            <div>
+              <p className="text-sm text-muted-foreground">Target Hari Ini</p>
+              <p className="text-2xl font-bold text-primary">{totalTarget.toLocaleString("id-ID")}</p>
+              <p className="text-xs text-muted-foreground">porsi dari {todayData.length} sesi</p>
+            </div>
+          </div>
         </CardContent></Card>
         <Card className="shadow-sm"><CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Realisasi</p>
-          <p className="text-3xl font-bold">{totalRealisasi.toLocaleString("id-ID")}</p>
-          <p className="text-xs text-muted-foreground">porsi selesai diproduksi</p>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 rounded-lg text-blue-600"><Utensils size={20} /></div>
+            <div>
+              <p className="text-sm text-muted-foreground">Realisasi</p>
+              <p className="text-2xl font-bold">{totalRealisasi.toLocaleString("id-ID")}</p>
+              <p className="text-xs text-muted-foreground">porsi selesai diproduksi</p>
+            </div>
+          </div>
         </CardContent></Card>
         <Card className={`shadow-sm ${persen >= 95 ? "" : persen >= 80 ? "border-amber-200" : "border-red-200"}`}><CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">Pencapaian</p>
-          <p className={`text-3xl font-bold ${persen >= 95 ? "text-primary" : persen >= 80 ? "text-amber-600" : "text-destructive"}`}>{persen}%</p>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            {persen >= 95 ? <TrendingUp size={12} className="text-primary" /> : <TrendingDown size={12} className="text-destructive" />}
-            <span>{persen >= 95 ? "Target tercapai" : "Di bawah target"}</span>
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-lg ${persen >= 95 ? "bg-primary/10 text-primary" : persen >= 80 ? "bg-amber-100 text-amber-600" : "bg-red-100 text-destructive"}`}>
+              {persen >= 95 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Pencapaian</p>
+              <p className={`text-2xl font-bold ${persen >= 95 ? "text-primary" : persen >= 80 ? "text-amber-600" : "text-destructive"}`}>{persen}%</p>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span>{persen >= 95 ? "Target tercapai" : "Di bawah target"}</span>
+              </div>
+            </div>
           </div>
+          {totalTarget > 0 && <Progress value={persen} className="mt-3 h-1.5" />}
         </CardContent></Card>
       </div>
 
@@ -132,6 +177,32 @@ export default function ProduksiPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Jadwalkan Produksi</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1"><Label>Dapur</Label>
+              <Select value={addForm.dapur_id} onValueChange={v => setAddForm(f => ({...f, dapur_id: v}))}>
+                <SelectTrigger><SelectValue placeholder="Pilih dapur" /></SelectTrigger>
+                <SelectContent>{(dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Menu</Label>
+              <Select value={addForm.menu_id} onValueChange={v => setAddForm(f => ({...f, menu_id: v}))}>
+                <SelectTrigger><SelectValue placeholder="Pilih menu" /></SelectTrigger>
+                <SelectContent>{(menuList ?? []).map(m => <SelectItem key={m.id} value={String(m.id)}>{m.nama} ({m.tanggal})</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Tanggal</Label><Input type="date" value={addForm.tanggal} onChange={e => setAddForm(f => ({...f, tanggal: e.target.value}))} /></div>
+            <div className="space-y-1"><Label>Target Porsi</Label><Input type="number" value={addForm.target_porsi} onChange={e => setAddForm(f => ({...f, target_porsi: e.target.value}))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenAdd(false)}>Batal</Button>
+            <Button onClick={() => create.mutate()} disabled={create.isPending}>{create.isPending ? "Menyimpan..." : "Jadwalkan"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={editItem !== null} onOpenChange={() => setEditItem(null)}>
         <DialogContent>

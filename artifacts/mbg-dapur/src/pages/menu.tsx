@@ -30,11 +30,11 @@ export default function MenuPage() {
       const url = editing ? `/api/menu/${editing.id}` : "/api/menu";
       const method = editing ? "PATCH" : "POST";
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      if (!r.ok) throw new Error();
+      if (!r.ok) throw new Error("Gagal menyimpan menu");
       return r.json();
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/menu"] }); toast({ title: editing ? "Menu diperbarui" : "Menu ditambahkan" }); setOpen(false); },
-    onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Gagal menyimpan", description: e.message, variant: "destructive" }),
   });
 
   const del = useMutation({
