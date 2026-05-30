@@ -1,22 +1,34 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: MBG Dapur - Sistem Manajemen Operasional Dapur
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: users
+  - name: dapur
+  - name: menu
+  - name: produksi
+  - name: absensi
+  - name: bahan-baku
+  - name: stok
+  - name: supplier
+  - name: pengiriman
+  - name: penerima-manfaat
+  - name: keuangan
+  - name: dashboard
+  - name: notifikasi
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +36,1978 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  # USERS
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: dapur_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # DAPUR
+  /dapur:
+    get:
+      operationId: listDapur
+      tags: [dapur]
+      summary: List semua dapur/SPPG
+      responses:
+        "200":
+          description: List dapur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dapur"
+    post:
+      operationId: createDapur
+      tags: [dapur]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DapurInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dapur"
+
+  /dapur/{id}:
+    get:
+      operationId: getDapur
+      tags: [dapur]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dapur detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dapur"
+    patch:
+      operationId: updateDapur
+      tags: [dapur]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DapurUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dapur"
+    delete:
+      operationId: deleteDapur
+      tags: [dapur]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # MENU
+  /menu:
+    get:
+      operationId: listMenu
+      tags: [menu]
+      summary: List menu harian
+      parameters:
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List menu
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Menu"
+    post:
+      operationId: createMenu
+      tags: [menu]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Menu"
+
+  /menu/{id}:
+    get:
+      operationId: getMenu
+      tags: [menu]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Menu detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Menu"
+    patch:
+      operationId: updateMenu
+      tags: [menu]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Menu"
+    delete:
+      operationId: deleteMenu
+      tags: [menu]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # PRODUKSI
+  /produksi:
+    get:
+      operationId: listProduksi
+      tags: [produksi]
+      summary: List hasil produksi
+      parameters:
+        - name: dapur_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List produksi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Produksi"
+    post:
+      operationId: createProduksi
+      tags: [produksi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProduksiInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Produksi"
+
+  /produksi/{id}:
+    get:
+      operationId: getProduksi
+      tags: [produksi]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Produksi detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Produksi"
+    patch:
+      operationId: updateProduksi
+      tags: [produksi]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProduksiUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Produksi"
+
+  /produksi/summary:
+    get:
+      operationId: getProduksiSummary
+      tags: [produksi]
+      summary: Ringkasan produksi per dapur
+      responses:
+        "200":
+          description: Summary produksi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProduksiSummary"
+
+  # ABSENSI
+  /absensi:
+    get:
+      operationId: listAbsensi
+      tags: [absensi]
+      summary: List absensi staff
+      parameters:
+        - name: dapur_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List absensi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Absensi"
+    post:
+      operationId: createAbsensi
+      tags: [absensi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbsensiInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Absensi"
+
+  /absensi/{id}:
+    patch:
+      operationId: updateAbsensi
+      tags: [absensi]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbsensiUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Absensi"
+
+  # BAHAN BAKU
+  /bahan-baku:
+    get:
+      operationId: listBahanBaku
+      tags: [bahan-baku]
+      summary: List bahan baku
+      responses:
+        "200":
+          description: List bahan baku
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BahanBaku"
+    post:
+      operationId: createBahanBaku
+      tags: [bahan-baku]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BahanBakuInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BahanBaku"
+
+  /bahan-baku/{id}:
+    patch:
+      operationId: updateBahanBaku
+      tags: [bahan-baku]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BahanBakuUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BahanBaku"
+    delete:
+      operationId: deleteBahanBaku
+      tags: [bahan-baku]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # STOK
+  /stok:
+    get:
+      operationId: listStok
+      tags: [stok]
+      summary: List stok gudang
+      parameters:
+        - name: gudang_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List stok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Stok"
+
+  /stok/alerts:
+    get:
+      operationId: getStokAlerts
+      tags: [stok]
+      summary: Stok di bawah minimum
+      responses:
+        "200":
+          description: Alert stok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StokAlert"
+
+  /penerimaan-bahan:
+    get:
+      operationId: listPenerimaanBahan
+      tags: [stok]
+      summary: List penerimaan bahan dari supplier
+      responses:
+        "200":
+          description: List penerimaan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PenerimaanBahan"
+    post:
+      operationId: createPenerimaanBahan
+      tags: [stok]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenerimaanBahanInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PenerimaanBahan"
+
+  /pengeluaran-bahan:
+    get:
+      operationId: listPengeluaranBahan
+      tags: [stok]
+      summary: List pengeluaran bahan ke dapur
+      responses:
+        "200":
+          description: List pengeluaran
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PengeluaranBahan"
+    post:
+      operationId: createPengeluaranBahan
+      tags: [stok]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PengeluaranBahanInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PengeluaranBahan"
+
+  # SUPPLIER
+  /supplier:
+    get:
+      operationId: listSupplier
+      tags: [supplier]
+      summary: List supplier
+      responses:
+        "200":
+          description: List supplier
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Supplier"
+    post:
+      operationId: createSupplier
+      tags: [supplier]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+
+  /supplier/{id}:
+    get:
+      operationId: getSupplier
+      tags: [supplier]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Supplier detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+    patch:
+      operationId: updateSupplier
+      tags: [supplier]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+    delete:
+      operationId: deleteSupplier
+      tags: [supplier]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # PENGIRIMAN / DISTRIBUSI
+  /pengiriman:
+    get:
+      operationId: listPengiriman
+      tags: [pengiriman]
+      summary: List manifest pengiriman
+      parameters:
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: driver_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List pengiriman
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pengiriman"
+    post:
+      operationId: createPengiriman
+      tags: [pengiriman]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PengirimanInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pengiriman"
+
+  /pengiriman/{id}:
+    get:
+      operationId: getPengiriman
+      tags: [pengiriman]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pengiriman detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pengiriman"
+    patch:
+      operationId: updatePengiriman
+      tags: [pengiriman]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PengirimanUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pengiriman"
+
+  /pengiriman/status-summary:
+    get:
+      operationId: getPengirimanStatusSummary
+      tags: [pengiriman]
+      summary: Ringkasan status pengiriman hari ini
+      responses:
+        "200":
+          description: Status summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PengirimanStatusSummary"
+
+  # PENERIMA MANFAAT
+  /penerima-manfaat:
+    get:
+      operationId: listPenerimaManfaat
+      tags: [penerima-manfaat]
+      summary: List penerima manfaat
+      parameters:
+        - name: sekolah
+          in: query
+          schema:
+            type: string
+        - name: wilayah
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List penerima manfaat
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PenerimaManfaat"
+    post:
+      operationId: createPenerimaManfaat
+      tags: [penerima-manfaat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenerimaManfaatInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PenerimaManfaat"
+
+  /penerima-manfaat/{id}:
+    patch:
+      operationId: updatePenerimaManfaat
+      tags: [penerima-manfaat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenerimaManfaatUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PenerimaManfaat"
+    delete:
+      operationId: deletePenerimaManfaat
+      tags: [penerima-manfaat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /verifikasi-penerimaan:
+    post:
+      operationId: createVerifikasiPenerimaan
+      tags: [penerima-manfaat]
+      summary: Verifikasi penerimaan makanan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifikasiPenerimaanInput"
+      responses:
+        "201":
+          description: Verifikasi dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifikasiPenerimaan"
+
+  /verifikasi-penerimaan/summary:
+    get:
+      operationId: getVerifikasiSummary
+      tags: [penerima-manfaat]
+      summary: Summary jangkauan per wilayah
+      responses:
+        "200":
+          description: Summary verifikasi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VerifikasiSummary"
+
+  # KEUANGAN
+  /keuangan/anggaran:
+    get:
+      operationId: listAnggaran
+      tags: [keuangan]
+      summary: List anggaran per dapur
+      parameters:
+        - name: dapur_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: periode
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List anggaran
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Anggaran"
+    post:
+      operationId: createAnggaran
+      tags: [keuangan]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnggaranInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Anggaran"
+
+  /keuangan/anggaran/{id}:
+    patch:
+      operationId: updateAnggaran
+      tags: [keuangan]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnggaranUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Anggaran"
+
+  /keuangan/realisasi:
+    get:
+      operationId: listRealisasi
+      tags: [keuangan]
+      summary: List realisasi biaya
+      responses:
+        "200":
+          description: List realisasi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Realisasi"
+    post:
+      operationId: createRealisasi
+      tags: [keuangan]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RealisasiInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Realisasi"
+
+  /keuangan/summary:
+    get:
+      operationId: getKeuanganSummary
+      tags: [keuangan]
+      summary: Ringkasan keuangan
+      responses:
+        "200":
+          description: Keuangan summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeuanganSummary"
+
+  # DASHBOARD
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Ringkasan harian dashboard
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/trends:
+    get:
+      operationId: getDashboardTrends
+      tags: [dashboard]
+      summary: Tren produksi 7 hari terakhir
+      responses:
+        "200":
+          description: Tren data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendData"
+
+  /dashboard/alerts:
+    get:
+      operationId: getDashboardAlerts
+      tags: [dashboard]
+      summary: Alert aktif sistem
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  # NOTIFIKASI
+  /notifikasi:
+    get:
+      operationId: listNotifikasi
+      tags: [notifikasi]
+      summary: List notifikasi user
+      responses:
+        "200":
+          description: List notifikasi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notifikasi"
+
+  /notifikasi/{id}/baca:
+    patch:
+      operationId: bacaNotifikasi
+      tags: [notifikasi]
+      summary: Tandai notifikasi sudah dibaca
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notifikasi"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # AUTH
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    # USER
+    User:
+      type: object
+      required: [id, nama, email, role, is_active, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, admin_yayasan, admin_dapur, admin_gudang, kepala_dapur, staff_dapur, staff_gudang, supplier, driver, verifikator]
+        dapur_id:
+          type: ["integer", "null"]
+        dapur_nama:
+          type: ["string", "null"]
+        no_hp:
+          type: ["string", "null"]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+
+    UserInput:
+      type: object
+      required: [nama, email, password, role]
+      properties:
+        nama:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+        dapur_id:
+          type: ["integer", "null"]
+        no_hp:
+          type: ["string", "null"]
+
+    UserUpdate:
+      type: object
+      properties:
+        nama:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        dapur_id:
+          type: ["integer", "null"]
+        no_hp:
+          type: ["string", "null"]
+        is_active:
+          type: boolean
+
+    # DAPUR
+    Dapur:
+      type: object
+      required: [id, nama, lokasi, kapasitas_porsi, status, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        lokasi:
+          type: string
+        alamat:
+          type: ["string", "null"]
+        kapasitas_porsi:
+          type: integer
+        kepala_dapur_id:
+          type: ["integer", "null"]
+        kepala_dapur_nama:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [aktif, nonaktif]
+        created_at:
+          type: string
+
+    DapurInput:
+      type: object
+      required: [nama, lokasi, kapasitas_porsi]
+      properties:
+        nama:
+          type: string
+        lokasi:
+          type: string
+        alamat:
+          type: string
+        kapasitas_porsi:
+          type: integer
+        kepala_dapur_id:
+          type: ["integer", "null"]
+        status:
+          type: string
+
+    DapurUpdate:
+      type: object
+      properties:
+        nama:
+          type: string
+        lokasi:
+          type: string
+        alamat:
+          type: string
+        kapasitas_porsi:
+          type: integer
+        kepala_dapur_id:
+          type: ["integer", "null"]
+        status:
+          type: string
+
+    # MENU
+    Menu:
+      type: object
+      required: [id, nama, tanggal, kategori, target_porsi, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        deskripsi:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        kategori:
+          type: string
+        target_porsi:
+          type: integer
+        kalori:
+          type: ["number", "null"]
+        created_at:
+          type: string
+
+    MenuInput:
+      type: object
+      required: [nama, tanggal, kategori, target_porsi]
+      properties:
+        nama:
+          type: string
+        deskripsi:
+          type: string
+        tanggal:
+          type: string
+        kategori:
+          type: string
+        target_porsi:
+          type: integer
+        kalori:
+          type: number
+
+    MenuUpdate:
+      type: object
+      properties:
+        nama:
+          type: string
+        deskripsi:
+          type: string
+        tanggal:
+          type: string
+        kategori:
+          type: string
+        target_porsi:
+          type: integer
+        kalori:
+          type: number
+
+    # PRODUKSI
+    Produksi:
+      type: object
+      required: [id, dapur_id, menu_id, tanggal, target_porsi, status, created_at]
+      properties:
+        id:
+          type: integer
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: ["string", "null"]
+        menu_id:
+          type: integer
+        menu_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        target_porsi:
+          type: integer
+        realisasi_porsi:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [dijadwalkan, proses, selesai, qc_lulus, qc_gagal]
+        catatan_qc:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    ProduksiInput:
+      type: object
+      required: [dapur_id, menu_id, tanggal, target_porsi]
+      properties:
+        dapur_id:
+          type: integer
+        menu_id:
+          type: integer
+        tanggal:
+          type: string
+        target_porsi:
+          type: integer
+
+    ProduksiUpdate:
+      type: object
+      properties:
+        realisasi_porsi:
+          type: integer
+        status:
+          type: string
+        catatan_qc:
+          type: string
+
+    ProduksiSummary:
+      type: object
+      required: [dapur_id, dapur_nama, total_target, total_realisasi, persen_tercapai]
+      properties:
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: string
+        total_target:
+          type: integer
+        total_realisasi:
+          type: integer
+        persen_tercapai:
+          type: number
+
+    # ABSENSI
+    Absensi:
+      type: object
+      required: [id, dapur_id, user_id, tanggal, status, created_at]
+      properties:
+        id:
+          type: integer
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: ["string", "null"]
+        user_id:
+          type: integer
+        user_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        status:
+          type: string
+          enum: [hadir, tidak_hadir, izin, sakit]
+        keterangan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    AbsensiInput:
+      type: object
+      required: [dapur_id, user_id, tanggal, status]
+      properties:
+        dapur_id:
+          type: integer
+        user_id:
+          type: integer
+        tanggal:
+          type: string
+        status:
+          type: string
+        keterangan:
+          type: string
+
+    AbsensiUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        keterangan:
+          type: string
+
+    # BAHAN BAKU
+    BahanBaku:
+      type: object
+      required: [id, nama, satuan, stok_minimum, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        satuan:
+          type: string
+        stok_minimum:
+          type: number
+        kategori:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    BahanBakuInput:
+      type: object
+      required: [nama, satuan, stok_minimum]
+      properties:
+        nama:
+          type: string
+        satuan:
+          type: string
+        stok_minimum:
+          type: number
+        kategori:
+          type: string
+
+    BahanBakuUpdate:
+      type: object
+      properties:
+        nama:
+          type: string
+        satuan:
+          type: string
+        stok_minimum:
+          type: number
+        kategori:
+          type: string
+
+    # STOK
+    Stok:
+      type: object
+      required: [id, bahan_baku_id, bahan_baku_nama, satuan, kuantitas, updated_at]
+      properties:
+        id:
+          type: integer
+        bahan_baku_id:
+          type: integer
+        bahan_baku_nama:
+          type: string
+        satuan:
+          type: string
+        kuantitas:
+          type: number
+        stok_minimum:
+          type: number
+        updated_at:
+          type: string
+
+    StokAlert:
+      type: object
+      required: [bahan_baku_id, bahan_baku_nama, kuantitas, stok_minimum, satuan]
+      properties:
+        bahan_baku_id:
+          type: integer
+        bahan_baku_nama:
+          type: string
+        kuantitas:
+          type: number
+        stok_minimum:
+          type: number
+        satuan:
+          type: string
+
+    PenerimaanBahan:
+      type: object
+      required: [id, supplier_id, tanggal, status, created_at]
+      properties:
+        id:
+          type: integer
+        supplier_id:
+          type: integer
+        supplier_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        total_item:
+          type: integer
+        status:
+          type: string
+          enum: [pending, diterima, ditolak]
+        catatan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    PenerimaanBahanInput:
+      type: object
+      required: [supplier_id, tanggal]
+      properties:
+        supplier_id:
+          type: integer
+        tanggal:
+          type: string
+        catatan:
+          type: string
+
+    PengeluaranBahan:
+      type: object
+      required: [id, dapur_id, tanggal, status, created_at]
+      properties:
+        id:
+          type: integer
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        total_item:
+          type: integer
+        status:
+          type: string
+          enum: [pending, diproses, selesai]
+        catatan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    PengeluaranBahanInput:
+      type: object
+      required: [dapur_id, tanggal]
+      properties:
+        dapur_id:
+          type: integer
+        tanggal:
+          type: string
+        catatan:
+          type: string
+
+    # SUPPLIER
+    Supplier:
+      type: object
+      required: [id, nama, kontak, status, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kontak:
+          type: string
+        email:
+          type: ["string", "null"]
+        alamat:
+          type: ["string", "null"]
+        kategori_bahan:
+          type: ["string", "null"]
+        rating:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [aktif, nonaktif]
+        created_at:
+          type: string
+
+    SupplierInput:
+      type: object
+      required: [nama, kontak]
+      properties:
+        nama:
+          type: string
+        kontak:
+          type: string
+        email:
+          type: string
+        alamat:
+          type: string
+        kategori_bahan:
+          type: string
+        status:
+          type: string
+
+    SupplierUpdate:
+      type: object
+      properties:
+        nama:
+          type: string
+        kontak:
+          type: string
+        email:
+          type: string
+        alamat:
+          type: string
+        kategori_bahan:
+          type: string
+        rating:
+          type: number
+        status:
+          type: string
+
+    # PENGIRIMAN
+    Pengiriman:
+      type: object
+      required: [id, dapur_id, tanggal, status, created_at]
+      properties:
+        id:
+          type: integer
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: ["string", "null"]
+        driver_id:
+          type: ["integer", "null"]
+        driver_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        jumlah_porsi:
+          type: integer
+        tujuan:
+          type: string
+        status:
+          type: string
+          enum: [dijadwalkan, berangkat, tiba, selesai, gagal]
+        catatan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    PengirimanInput:
+      type: object
+      required: [dapur_id, tanggal, jumlah_porsi, tujuan]
+      properties:
+        dapur_id:
+          type: integer
+        driver_id:
+          type: ["integer", "null"]
+        tanggal:
+          type: string
+        jumlah_porsi:
+          type: integer
+        tujuan:
+          type: string
+        catatan:
+          type: string
+
+    PengirimanUpdate:
+      type: object
+      properties:
+        driver_id:
+          type: ["integer", "null"]
+        status:
+          type: string
+        catatan:
+          type: string
+        jumlah_porsi:
+          type: integer
+
+    PengirimanStatusSummary:
+      type: object
+      required: [dijadwalkan, berangkat, tiba, selesai, gagal, total]
+      properties:
+        dijadwalkan:
+          type: integer
+        berangkat:
+          type: integer
+        tiba:
+          type: integer
+        selesai:
+          type: integer
+        gagal:
+          type: integer
+        total:
+          type: integer
+
+    # PENERIMA MANFAAT
+    PenerimaManfaat:
+      type: object
+      required: [id, nama, sekolah, kelas, wilayah, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        sekolah:
+          type: string
+        kelas:
+          type: string
+        wilayah:
+          type: string
+        is_aktif:
+          type: boolean
+        created_at:
+          type: string
+
+    PenerimaManfaatInput:
+      type: object
+      required: [nama, sekolah, kelas, wilayah]
+      properties:
+        nama:
+          type: string
+        sekolah:
+          type: string
+        kelas:
+          type: string
+        wilayah:
+          type: string
+
+    PenerimaManfaatUpdate:
+      type: object
+      properties:
+        nama:
+          type: string
+        sekolah:
+          type: string
+        kelas:
+          type: string
+        wilayah:
+          type: string
+        is_aktif:
+          type: boolean
+
+    VerifikasiPenerimaanInput:
+      type: object
+      required: [penerima_manfaat_id, tanggal, status]
+      properties:
+        penerima_manfaat_id:
+          type: integer
+        tanggal:
+          type: string
+        status:
+          type: string
+          enum: [hadir, tidak_hadir]
+        catatan:
+          type: string
+
+    VerifikasiPenerimaan:
+      type: object
+      required: [id, penerima_manfaat_id, tanggal, status, created_at]
+      properties:
+        id:
+          type: integer
+        penerima_manfaat_id:
+          type: integer
+        penerima_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        status:
+          type: string
+        catatan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    VerifikasiSummary:
+      type: object
+      required: [wilayah, total_penerima, hadir_hari_ini, persen_jangkauan]
+      properties:
+        wilayah:
+          type: string
+        total_penerima:
+          type: integer
+        hadir_hari_ini:
+          type: integer
+        persen_jangkauan:
+          type: number
+
+    # KEUANGAN
+    Anggaran:
+      type: object
+      required: [id, dapur_id, periode, total_anggaran, created_at]
+      properties:
+        id:
+          type: integer
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: ["string", "null"]
+        periode:
+          type: string
+        total_anggaran:
+          type: number
+        anggaran_per_porsi:
+          type: ["number", "null"]
+        created_at:
+          type: string
+
+    AnggaranInput:
+      type: object
+      required: [dapur_id, periode, total_anggaran]
+      properties:
+        dapur_id:
+          type: integer
+        periode:
+          type: string
+        total_anggaran:
+          type: number
+        anggaran_per_porsi:
+          type: number
+
+    AnggaranUpdate:
+      type: object
+      properties:
+        total_anggaran:
+          type: number
+        anggaran_per_porsi:
+          type: number
+
+    Realisasi:
+      type: object
+      required: [id, dapur_id, tanggal, kategori, jumlah, created_at]
+      properties:
+        id:
+          type: integer
+        dapur_id:
+          type: integer
+        dapur_nama:
+          type: ["string", "null"]
+        tanggal:
+          type: string
+        kategori:
+          type: string
+          enum: [bahan_baku, operasional, sdm, sewa, lainnya]
+        jumlah:
+          type: number
+        deskripsi:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    RealisasiInput:
+      type: object
+      required: [dapur_id, tanggal, kategori, jumlah]
+      properties:
+        dapur_id:
+          type: integer
+        tanggal:
+          type: string
+        kategori:
+          type: string
+        jumlah:
+          type: number
+        deskripsi:
+          type: string
+
+    KeuanganSummary:
+      type: object
+      required: [total_anggaran, total_realisasi, sisa_anggaran, persen_terpakai]
+      properties:
+        total_anggaran:
+          type: number
+        total_realisasi:
+          type: number
+        sisa_anggaran:
+          type: number
+        persen_terpakai:
+          type: number
+        breakdown_kategori:
+          type: array
+          items:
+            type: object
+            required: [kategori, jumlah]
+            properties:
+              kategori:
+                type: string
+              jumlah:
+                type: number
+
+    # DASHBOARD
+    DashboardSummary:
+      type: object
+      required: [total_porsi_hari_ini, total_dapur_aktif, total_pengiriman_hari_ini, total_penerima_manfaat, stok_alert_count]
+      properties:
+        total_porsi_hari_ini:
+          type: integer
+        target_porsi_hari_ini:
+          type: integer
+        total_dapur_aktif:
+          type: integer
+        total_pengiriman_hari_ini:
+          type: integer
+        total_penerima_manfaat:
+          type: integer
+        stok_alert_count:
+          type: integer
+        pengiriman_selesai:
+          type: integer
+        pengiriman_dalam_proses:
+          type: integer
+
+    TrendData:
+      type: object
+      required: [tanggal, total_porsi, target_porsi]
+      properties:
+        tanggal:
+          type: string
+        total_porsi:
+          type: integer
+        target_porsi:
+          type: integer
+
+    Alert:
+      type: object
+      required: [id, tipe, pesan, tingkat, created_at]
+      properties:
+        id:
+          type: integer
+        tipe:
+          type: string
+        pesan:
+          type: string
+        tingkat:
+          type: string
+          enum: [info, warning, critical]
+        created_at:
+          type: string
+
+    # NOTIFIKASI
+    Notifikasi:
+      type: object
+      required: [id, pesan, tipe, is_dibaca, created_at]
+      properties:
+        id:
+          type: integer
+        pesan:
+          type: string
+        tipe:
+          type: string
+        is_dibaca:
+          type: boolean
+        created_at:
+          type: string

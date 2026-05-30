@@ -1,0 +1,65 @@
+sistem manajemen operasional dapur MBG yang lengkap! Biar saya bantu rancang arsitekturnya dulu sebelum mulai coding.Berikut rancangan lengkap sistem manajemen MBG — role, menu, dan fitur yang dibutuhkan:
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.25s;
+    animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+  }
+VvisualizeVvisualize show_widgetBerikut rincian lengkap role, menu, dan fitur yang dibutuhkan:
+
+Role & Akses
+RoleLevelAkses UtamaSuper AdminSistemSemua modul, konfigurasi, laporan globalAdmin YayasanOrganisasiKelola dapur, keuangan, mitraAdmin Dapur (SPPG)DapurProduksi, SDM, keuangan dapurAdmin GudangGudangStok masuk/keluar, supplierKepala DapurOperasionalProduksi harian, QC, absenStaff DapurOperasionalInput produksi, checklistStaff GudangGudangInput penerimaan & pengeluaran bahanPemasok/SupplierEksternalPortal pengiriman & invoiceDriverDistribusiManifest pengiriman, konfirmasiVerifikatorDistribusiValidasi penerima manfaat
+
+Modul & Menu Sistem
+Dashboard
+Ringkasan harian: total porsi, stok bahan, status pengiriman, alert, grafik tren
+Manajemen Dapur / SPPG
+
+Data dapur (lokasi, kapasitas, kepala dapur)
+Jadwal produksi & menu harian
+Input hasil produksi & QC
+Absensi staff
+
+Gudang & Stok
+
+Penerimaan bahan baku dari supplier
+Pengeluaran bahan ke dapur
+Stok opname & peringatan stok minimum
+Riwayat mutasi barang
+
+Manajemen Supplier
+
+Data supplier & kontrak
+Portal pengiriman & jadwal pasokan
+Penilaian kualitas & kepatuhan
+
+Distribusi
+
+Manifest pengiriman per rute & dapur
+Tracking driver (status: berangkat / tiba / selesai)
+Konfirmasi penerimaan di sekolah/lokasi
+
+Penerima Manfaat
+
+Database penerima (nama, sekolah, kelas)
+Absensi / verifikasi penerimaan harian
+Laporan jangkauan per wilayah
+
+Keuangan
+
+Anggaran per dapur (Rp/porsi)
+Realisasi biaya bahan, operasional, sewa
+Laporan keuangan untuk BGN
+Virtual account & rekonsiliasi
+
+Laporan & Monitoring
+
+Laporan harian/mingguan/bulanan
+Laporan ke BGN (format resmi)
+Ekspor Excel/PDF
+
+Pengaturan & Konfigurasi
+
+Manajemen user & role
+Master data (bahan, menu, lokasi)
+Notifikasi & alert otomatis
