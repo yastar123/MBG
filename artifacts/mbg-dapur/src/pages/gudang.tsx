@@ -8,25 +8,34 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle } from "lucide-react";
+import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
 type Stok = { bahan_baku_id: number; bahan_baku_nama: string; kuantitas: number; satuan: string; stok_minimum: number };
 type BahanBaku = { id: number; nama: string; satuan: string; stok_minimum: number; kategori: string | null };
 type Penerimaan = { id: number; supplier_id: number; tanggal: string; total_item: number | null; status: string; catatan: string | null; supplier_nama: string | null };
+type Supplier = { id: number; nama: string };
 
 const emptyBahan = { nama: "", satuan: "", stok_minimum: "", kategori: "" };
+const emptyPenerimaan = { supplier_id: "", tanggal: new Date().toISOString().slice(0, 10), catatan: "", status: "pending" };
 
 export default function GudangPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: stok, isLoading: loadingStok } = useQuery<Stok[]>({ queryKey: ["/api/stok"], queryFn: async () => (await fetch("/api/stok")).json() });
   const { data: bahan, isLoading: loadingBahan } = useQuery<BahanBaku[]>({ queryKey: ["/api/bahan-baku"], queryFn: async () => (await fetch("/api/bahan-baku")).json() });
-  const { data: penerimaan } = useQuery<Penerimaan[]>({ queryKey: ["/api/penerimaan-bahan"], queryFn: async () => (await fetch("/api/penerimaan-bahan")).json() });
+  const { data: penerimaan, isLoading: loadingPenerimaan } = useQuery<Penerimaan[]>({ queryKey: ["/api/penerimaan-bahan"], queryFn: async () => (await fetch("/api/penerimaan-bahan")).json() });
+  const { data: supplierList } = useQuery<Supplier[]>({ queryKey: ["/api/supplier"], queryFn: async () => (await fetch("/api/supplier")).json() });
+
   const [openBahan, setOpenBahan] = useState(false);
   const [editBahan, setEditBahan] = useState<BahanBaku | null>(null);
   const [formBahan, setFormBahan] = useState(emptyBahan);
+  const [delBahanId, setDelBahanId] = useState<number | null>(null);
+
+  const [openPenerimaan, setOpenPenerimaan] = useState(false);
+  const [formPenerimaan, setFormPenerimaan] = useState(emptyPenerimaan);
 
   const saveBahan = useMutation({
     mutationFn: async () => {
@@ -54,11 +63,33 @@ export default function GudangPage() {
       qc.invalidateQueries({ queryKey: ["/api/bahan-baku"] });
       qc.invalidateQueries({ queryKey: ["/api/stok"] });
       toast({ title: "Bahan baku dihapus" });
+      setDelBahanId(null);
     },
     onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
+  const savePenerimaan = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/penerimaan-bahan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formPenerimaan),
+      });
+      if (!r.ok) throw new Error();
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/penerimaan-bahan"] });
+      qc.invalidateQueries({ queryKey: ["/api/stok"] });
+      toast({ title: "Penerimaan bahan berhasil dicatat" });
+      setOpenPenerimaan(false);
+      setFormPenerimaan(emptyPenerimaan);
+    },
+    onError: () => toast({ title: "Gagal mencatat penerimaan", variant: "destructive" }),
+  });
+
   const alertItems = stok?.filter(s => s.kuantitas <= s.stok_minimum) ?? [];
+  const hampirHabisItems = stok?.filter(s => s.kuantitas > s.stok_minimum && s.kuantitas <= s.stok_minimum * 1.5) ?? [];
   const amanItems = stok?.filter(s => s.kuantitas > s.stok_minimum * 1.5) ?? [];
 
   function openAddBahan() { setEditBahan(null); setFormBahan(emptyBahan); setOpenBahan(true); }
@@ -69,9 +100,9 @@ export default function GudangPage() {
   }
 
   function getStokStatus(s: Stok) {
-    if (s.kuantitas <= s.stok_minimum) return { label: "Rendah", variant: "destructive" as const, bar: "bg-destructive" };
-    if (s.kuantitas <= s.stok_minimum * 1.5) return { label: "Hampir Habis", variant: "outline" as const, bar: "bg-amber-400" };
-    return { label: "Aman", variant: "default" as const, bar: "bg-primary" };
+    if (s.kuantitas <= s.stok_minimum) return { label: "Rendah", variant: "destructive" as const, bar: "bg-destructive", pct: Math.min(100, Math.round((s.kuantitas / s.stok_minimum) * 100)) };
+    if (s.kuantitas <= s.stok_minimum * 1.5) return { label: "Hampir Habis", variant: "outline" as const, bar: "bg-amber-400", pct: Math.min(100, Math.round((s.kuantitas / (s.stok_minimum * 1.5)) * 100)) };
+    return { label: "Aman", variant: "default" as const, bar: "bg-primary", pct: 100 };
   }
 
   return (
@@ -142,6 +173,7 @@ export default function GudangPage() {
                     <Package size={22} className="text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground">Belum ada data stok</p>
+                  <p className="text-xs text-muted-foreground/60">Tambahkan bahan baku terlebih dahulu</p>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -151,6 +183,7 @@ export default function GudangPage() {
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Bahan Baku</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs">Stok</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Minimum</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Level</th>
                         <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
                       </tr>
                     </thead>
@@ -162,6 +195,9 @@ export default function GudangPage() {
                             <td className="py-3 px-4 font-medium">{s.bahan_baku_nama}</td>
                             <td className="py-3 px-4 text-right font-semibold">{s.kuantitas} <span className="text-muted-foreground font-normal text-xs">{s.satuan}</span></td>
                             <td className="py-3 px-4 text-right text-muted-foreground hidden sm:table-cell text-xs">{s.stok_minimum} {s.satuan}</td>
+                            <td className="py-3 px-4 hidden md:table-cell w-32">
+                              <Progress value={st.pct} className="h-1.5" />
+                            </td>
                             <td className="py-3 px-4 text-center">
                               <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
                             </td>
@@ -217,11 +253,11 @@ export default function GudangPage() {
                               <Badge variant="secondary" className="text-xs">{b.kategori}</Badge>
                             ) : <span className="text-muted-foreground text-xs">—</span>}
                           </td>
-                          <td className="py-3 px-4 text-right">{b.stok_minimum}</td>
+                          <td className="py-3 px-4 text-right">{b.stok_minimum} <span className="text-muted-foreground text-xs">{b.satuan}</span></td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditBahan(b)}><Pencil size={13} /></Button>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => delBahan.mutate(b.id)}><Trash2 size={13} /></Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelBahanId(b.id)}><Trash2 size={13} /></Button>
                             </div>
                           </td>
                         </tr>
@@ -237,15 +273,28 @@ export default function GudangPage() {
         <TabsContent value="penerimaan">
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Riwayat Penerimaan Bahan</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ClipboardList size={16} className="text-primary" />
+                  Riwayat Penerimaan Bahan
+                </CardTitle>
+                <Button size="sm" onClick={() => { setFormPenerimaan(emptyPenerimaan); setOpenPenerimaan(true); }} className="gap-1.5">
+                  <Plus size={14} /> Catat Penerimaan
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
-              {(penerimaan ?? []).length === 0 ? (
+              {loadingPenerimaan ? (
+                <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+              ) : (penerimaan ?? []).length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
-                    <Package size={22} className="text-muted-foreground" />
+                    <ClipboardList size={22} className="text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground">Belum ada riwayat penerimaan</p>
+                  <Button size="sm" onClick={() => { setFormPenerimaan(emptyPenerimaan); setOpenPenerimaan(true); }} className="gap-1.5">
+                    <Plus size={14} /> Catat Penerimaan
+                  </Button>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -255,6 +304,7 @@ export default function GudangPage() {
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Tanggal</th>
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Supplier</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Jumlah Item</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Catatan</th>
                         <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
                       </tr>
                     </thead>
@@ -264,6 +314,7 @@ export default function GudangPage() {
                           <td className="py-3 px-4 text-xs text-muted-foreground">{p.tanggal}</td>
                           <td className="py-3 px-4 font-medium">{p.supplier_nama ?? "—"}</td>
                           <td className="py-3 px-4 text-right hidden sm:table-cell">{p.total_item ?? 0}</td>
+                          <td className="py-3 px-4 text-muted-foreground text-xs hidden md:table-cell max-w-[160px] truncate">{p.catatan ?? "—"}</td>
                           <td className="py-3 px-4 text-center">
                             <Badge variant={p.status === "diterima" ? "default" : "secondary"} className="text-xs capitalize">{p.status}</Badge>
                           </td>
@@ -278,6 +329,7 @@ export default function GudangPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Dialog: Tambah/Edit Bahan Baku */}
       <Dialog open={openBahan} onOpenChange={setOpenBahan}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editBahan ? "Edit Bahan Baku" : "Tambah Bahan Baku"}</DialogTitle></DialogHeader>
@@ -301,6 +353,63 @@ export default function GudangPage() {
             <Button variant="outline" onClick={() => setOpenBahan(false)}>Batal</Button>
             <Button onClick={() => saveBahan.mutate()} disabled={saveBahan.isPending || !formBahan.nama || !formBahan.satuan}>
               {saveBahan.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Konfirmasi Hapus Bahan */}
+      <Dialog open={delBahanId !== null} onOpenChange={() => setDelBahanId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Hapus Bahan Baku</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus bahan <span className="font-semibold text-foreground">{(bahan ?? []).find(b => b.id === delBahanId)?.nama}</span>? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDelBahanId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={() => delBahanId && delBahan.mutate(delBahanId)} disabled={delBahan.isPending}>
+              {delBahan.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Catat Penerimaan */}
+      <Dialog open={openPenerimaan} onOpenChange={setOpenPenerimaan}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Catat Penerimaan Bahan</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5"><Label>Supplier</Label>
+              <Select value={formPenerimaan.supplier_id} onValueChange={v => setFormPenerimaan(f => ({...f, supplier_id: v}))}>
+                <SelectTrigger><SelectValue placeholder="Pilih supplier" /></SelectTrigger>
+                <SelectContent>
+                  {(supplierList ?? []).map(s => <SelectItem key={s.id} value={String(s.id)}>{s.nama}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Tanggal</Label>
+                <Input type="date" value={formPenerimaan.tanggal} onChange={e => setFormPenerimaan(f => ({...f, tanggal: e.target.value}))} />
+              </div>
+              <div className="space-y-1.5"><Label>Status</Label>
+                <Select value={formPenerimaan.status} onValueChange={v => setFormPenerimaan(f => ({...f, status: v}))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="diterima">Diterima</SelectItem>
+                    <SelectItem value="ditolak">Ditolak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5"><Label>Catatan <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Input value={formPenerimaan.catatan} onChange={e => setFormPenerimaan(f => ({...f, catatan: e.target.value}))} placeholder="Kondisi bahan, kuantitas, dll..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenPenerimaan(false)}>Batal</Button>
+            <Button onClick={() => savePenerimaan.mutate()} disabled={savePenerimaan.isPending || !formPenerimaan.supplier_id}>
+              {savePenerimaan.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>

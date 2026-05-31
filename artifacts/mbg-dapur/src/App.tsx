@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,9 +21,27 @@ import KeuanganPage from "@/pages/keuangan";
 import PenggunaPage from "@/pages/pengguna";
 import PengaturanPage from "@/pages/pengaturan";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+});
 
 setupAuth();
+
+function isAuthenticated() {
+  return Boolean(localStorage.getItem("mbg_token"));
+}
+
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  if (!isAuthenticated()) {
+    return <Redirect to="/login" />;
+  }
+  return <Component />;
+}
 
 function AuthenticatedApp() {
   return (
@@ -50,12 +68,19 @@ function AuthenticatedApp() {
   );
 }
 
+function PublicOnlyRoute({ component: Component }: { component: React.ComponentType }) {
+  if (isAuthenticated()) {
+    return <Redirect to="/dashboard" />;
+  }
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Login} />
-      <Route path="/login" component={Login} />
-      <Route path="/:rest*" component={AuthenticatedApp} />
+      <Route path="/">{() => <Redirect to={isAuthenticated() ? "/dashboard" : "/login"} />}</Route>
+      <Route path="/login">{() => <PublicOnlyRoute component={Login} />}</Route>
+      <Route path="/:rest*">{() => <ProtectedRoute component={AuthenticatedApp} />}</Route>
     </Switch>
   );
 }

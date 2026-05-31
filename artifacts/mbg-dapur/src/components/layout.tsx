@@ -11,13 +11,12 @@ import {
   Settings,
   LogOut,
   UserCircle,
-  ClipboardList,
   CalendarCheck,
   Building2,
   UtensilsCrossed,
   Calendar,
   Menu,
-  X,
+  ChevronRight,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearToken } from "@/lib/auth";
@@ -36,7 +35,6 @@ import {
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 
 const navGroups = [
   {
@@ -52,7 +50,7 @@ const navGroups = [
   {
     label: "Logistik",
     items: [
-      { name: "Gudang", href: "/gudang/stok", icon: PackageSearch },
+      { name: "Gudang", href: "/gudang", icon: PackageSearch },
       { name: "Distribusi", href: "/distribusi", icon: Truck },
       { name: "Supplier", href: "/supplier", icon: Building2 },
     ],
@@ -61,7 +59,7 @@ const navGroups = [
     label: "Manajemen",
     items: [
       { name: "Penerima Manfaat", href: "/penerima-manfaat", icon: Users },
-      { name: "Keuangan", href: "/keuangan/summary", icon: Wallet },
+      { name: "Keuangan", href: "/keuangan", icon: Wallet },
       { name: "Pengguna", href: "/pengguna", icon: UserCircle },
       { name: "Pengaturan", href: "/pengaturan", icon: Settings },
     ],
@@ -75,6 +73,16 @@ function useDatetime() {
     return () => clearInterval(t);
   }, []);
   return now;
+}
+
+function isActive(location: string, href: string): boolean {
+  if (href === "/gudang") {
+    return location === "/gudang" || location.startsWith("/gudang/");
+  }
+  if (href === "/keuangan") {
+    return location === "/keuangan" || location.startsWith("/keuangan/");
+  }
+  return location === href || location.startsWith(href + "/");
 }
 
 function SidebarInner({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
@@ -108,10 +116,10 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const isActive = location === item.href || location.startsWith(item.href + "/");
+                  const active = isActive(location, item.href);
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                      <SidebarMenuButton asChild isActive={active} tooltip={item.name}>
                         <Link
                           href={item.href}
                           onClick={onNavigate}
@@ -146,8 +154,9 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
             </div>
             <button 
               onClick={handleLogout}
-              className="p-1.5 text-sidebar-foreground/35 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-all shrink-0 opacity-0 group-hover:opacity-100"
+              className="p-1.5 text-sidebar-foreground/35 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-all shrink-0 opacity-0 group-hover:opacity-100 min-w-[32px] min-h-[32px] flex items-center justify-center"
               title="Keluar"
+              aria-label="Keluar"
             >
               <LogOut size={15} />
             </button>
@@ -164,8 +173,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const now = useDatetime();
 
   const allItems = navGroups.flatMap(g => g.items);
-  const activeItem = allItems.find(i => location === i.href || location.startsWith(i.href + "/"));
-  const activeGroup = navGroups.find(g => g.items.some(i => location === i.href || location.startsWith(i.href + "/")));
+  const activeItem = allItems.find(i => isActive(location, i.href));
+  const activeGroup = navGroups.find(g => g.items.some(i => isActive(location, i.href)));
 
   const dateStr = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
@@ -195,39 +204,44 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <header className="h-14 border-b bg-card/95 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 sticky top-0 z-20 shadow-sm">
+            {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(true)}
-              className="md:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
-              aria-label="Buka menu"
+              className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
+              aria-label="Buka menu navigasi"
             >
               <Menu size={18} />
             </button>
             <SidebarTrigger className="hidden md:flex shrink-0" />
 
-            <div className="flex-1 flex items-center gap-2 min-w-0">
-              <div className="hidden md:flex items-center gap-1.5 text-sm min-w-0">
-                <span className="text-muted-foreground/50 shrink-0 text-xs">MBG Dapur</span>
+            {/* Breadcrumb */}
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <div className="hidden md:flex items-center gap-1 text-sm min-w-0">
+                <span className="text-muted-foreground/50 text-xs shrink-0">MBG Dapur</span>
                 {activeGroup && (
                   <>
-                    <span className="text-muted-foreground/30 text-xs">/</span>
+                    <ChevronRight size={12} className="text-muted-foreground/30 shrink-0" />
                     <span className="text-muted-foreground/50 shrink-0 text-xs">{activeGroup.label}</span>
                   </>
                 )}
                 {activeItem && (
                   <>
-                    <span className="text-muted-foreground/30 text-xs">/</span>
+                    <ChevronRight size={12} className="text-muted-foreground/30 shrink-0" />
                     <span className="text-foreground font-semibold text-xs truncate">{activeItem.name}</span>
                   </>
                 )}
               </div>
+              {/* Mobile: current page name */}
               <div className="md:hidden font-bold text-sm text-foreground truncate">
                 {activeItem?.name ?? "MBG Dapur"}
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/40 shrink-0">
+            {/* Date pill */}
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/40 shrink-0 select-none">
               <Calendar size={11} />
-              <span>{dateStr}</span>
+              <span className="hidden lg:inline">{dateStr}</span>
+              <span className="lg:hidden">{now.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
             </div>
           </header>
 

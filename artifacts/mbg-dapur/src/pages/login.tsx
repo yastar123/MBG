@@ -116,7 +116,7 @@ export default function Login() {
               </div>
             ))}
           </div>
-          <p className="text-white/25 text-xs mt-6">© 2025 MBG Dapur. Program Makan Bergizi Gratis.</p>
+          <p className="text-white/25 text-xs mt-6">© {new Date().getFullYear()} MBG Dapur. Program Makan Bergizi Gratis.</p>
         </div>
       </div>
 

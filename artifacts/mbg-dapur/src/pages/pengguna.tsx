@@ -122,7 +122,7 @@ export default function PenggunaPage() {
       )}
 
       <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-5 animate-slide-up" style={{ animationDelay: '0.05s' }}>
-        {Object.entries(roleLabel).slice(0, 5).map(([role, label]) => {
+        {Object.entries(roleLabel).map(([role, label]) => {
           const count = (data ?? []).filter(u => u.role === role).length;
           return (
             <Card key={role} className="shadow-sm">
