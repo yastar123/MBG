@@ -46,7 +46,7 @@ router.post("/users", authMiddleware, async (req, res) => {
 });
 
 router.get("/users/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
   if (!user) { res.status(404).json({ error: "User tidak ditemukan" }); return; }
   const dapurList = user.dapur_id ? await db.select().from(dapurTable).where(eq(dapurTable.id, user.dapur_id)).limit(1) : [];
@@ -55,7 +55,7 @@ router.get("/users/:id", authMiddleware, async (req, res) => {
 });
 
 router.patch("/users/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { nama, email, role, dapur_id, no_hp, is_active } = req.body;
   const [user] = await db
     .update(usersTable)
@@ -68,7 +68,7 @@ router.patch("/users/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/users/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   await db.delete(usersTable).where(eq(usersTable.id, id));
   res.status(204).end();
 });

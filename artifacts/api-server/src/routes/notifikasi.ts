@@ -11,7 +11,7 @@ router.get("/notifikasi", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 router.patch("/notifikasi/:id/baca", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [n] = await db
     .update(notifikasiTable)
     .set({ is_dibaca: true })

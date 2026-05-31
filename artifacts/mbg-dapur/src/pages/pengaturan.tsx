@@ -3,21 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Settings, Database, Shield, Bell, ChefHat, CheckCircle2, Server, Clock, Info } from "lucide-react";
+import { Settings, Database, Shield, Bell, ChefHat, Crown, Building2, PackageSearch, Star, Users, Truck, CheckSquare, Tag, CheckCircle2, Server, Clock, Info } from "lucide-react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
 const ROLE_ITEMS = [
-  { role: "Super Admin", akses: "Akses penuh seluruh sistem", color: "bg-red-100 text-red-700" },
-  { role: "Admin Yayasan", akses: "Laporan, anggaran, monitoring", color: "bg-purple-100 text-purple-700" },
-  { role: "Admin Dapur", akses: "Manajemen dapur & produksi", color: "bg-blue-100 text-blue-700" },
-  { role: "Admin Gudang", akses: "Manajemen stok & penerimaan bahan", color: "bg-amber-100 text-amber-700" },
-  { role: "Kepala Dapur", akses: "Produksi & absensi staff", color: "bg-green-100 text-green-700" },
-  { role: "Staff Dapur", akses: "Input produksi & absensi", color: "bg-teal-100 text-teal-700" },
-  { role: "Staff Gudang", akses: "Input stok & pengeluaran bahan", color: "bg-orange-100 text-orange-700" },
-  { role: "Driver", akses: "Update status pengiriman", color: "bg-pink-100 text-pink-700" },
-  { role: "Verifikator", akses: "Verifikasi penerimaan manfaat", color: "bg-indigo-100 text-indigo-700" },
-  { role: "Supplier", akses: "Lihat PO & update status pengiriman", color: "bg-gray-100 text-gray-700" },
+  { role: "Super Admin",     akses: "Akses penuh seluruh sistem",          color: "bg-red-100 text-red-700",     icon: Crown },
+  { role: "Admin Yayasan",   akses: "Laporan, anggaran, monitoring",        color: "bg-purple-100 text-purple-700", icon: Building2 },
+  { role: "Admin Dapur",     akses: "Manajemen dapur & produksi",           color: "bg-blue-100 text-blue-700",   icon: ChefHat },
+  { role: "Admin Gudang",    akses: "Manajemen stok & penerimaan bahan",    color: "bg-amber-100 text-amber-700", icon: PackageSearch },
+  { role: "Kepala Dapur",    akses: "Produksi & absensi staff",             color: "bg-green-100 text-green-700", icon: Star },
+  { role: "Staff Dapur",     akses: "Input produksi & absensi",             color: "bg-teal-100 text-teal-700",   icon: Users },
+  { role: "Staff Gudang",    akses: "Input stok & pengeluaran bahan",       color: "bg-orange-100 text-orange-700", icon: PackageSearch },
+  { role: "Driver",          akses: "Update status pengiriman",             color: "bg-pink-100 text-pink-700",   icon: Truck },
+  { role: "Verifikator",     akses: "Verifikasi penerimaan manfaat",        color: "bg-indigo-100 text-indigo-700", icon: CheckSquare },
+  { role: "Supplier",        akses: "Lihat PO & update status pengiriman",  color: "bg-gray-100 text-gray-700",   icon: Tag },
 ];
 
 const DEFAULT_NOTIFS = [
@@ -41,7 +41,7 @@ function loadNotifs() {
 }
 
 export default function PengaturanPage() {
-  const { data: user } = useGetMe({ query: { retry: false } });
+  const { data: user } = useGetMe();
   const { toast } = useToast();
   const [notifs, setNotifs] = useState(loadNotifs);
   const [serverTime, setServerTime] = useState(new Date().toLocaleTimeString("id-ID"));
@@ -163,7 +163,7 @@ export default function PengaturanPage() {
               {ROLE_ITEMS.map(r => (
                 <div key={r.role} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors">
                   <span className={`text-xs px-2 py-1 rounded-lg font-semibold mt-0.5 shrink-0 flex items-center gap-1 ${r.color}`}>
-                    <ChefHat size={11} />
+                    <r.icon size={11} />
                     {r.role}
                   </span>
                   <p className="text-xs text-muted-foreground leading-relaxed">{r.akses}</p>

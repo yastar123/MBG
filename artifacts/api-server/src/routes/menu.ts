@@ -26,14 +26,14 @@ router.post("/menu", authMiddleware, async (req, res) => {
 });
 
 router.get("/menu/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [menu] = await db.select().from(menuTable).where(eq(menuTable.id, id)).limit(1);
   if (!menu) { res.status(404).json({ error: "Menu tidak ditemukan" }); return; }
   res.json({ ...menu, kalori: menu.kalori ? parseFloat(menu.kalori) : null });
 });
 
 router.patch("/menu/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { nama, deskripsi, tanggal, kategori, target_porsi, kalori } = req.body;
   const [menu] = await db
     .update(menuTable)
@@ -45,7 +45,7 @@ router.patch("/menu/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/menu/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   await db.delete(menuTable).where(eq(menuTable.id, id));
   res.status(204).end();
 });

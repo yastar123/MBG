@@ -54,7 +54,7 @@ router.post("/produksi", authMiddleware, async (req, res) => {
 });
 
 router.get("/produksi/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [p] = await db.select().from(produksiTable).where(eq(produksiTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Produksi tidak ditemukan" }); return; }
   const [dapur] = p.dapur_id ? await db.select().from(dapurTable).where(eq(dapurTable.id, p.dapur_id)).limit(1) : [null];
@@ -63,7 +63,7 @@ router.get("/produksi/:id", authMiddleware, async (req, res) => {
 });
 
 router.patch("/produksi/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { realisasi_porsi, status, catatan_qc } = req.body;
   const [p] = await db
     .update(produksiTable)

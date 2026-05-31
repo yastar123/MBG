@@ -25,7 +25,7 @@ router.post("/bahan-baku", authMiddleware, async (req, res) => {
 });
 
 router.patch("/bahan-baku/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { nama, satuan, stok_minimum, kategori } = req.body;
   const [b] = await db
     .update(bahanBakuTable)
@@ -37,7 +37,7 @@ router.patch("/bahan-baku/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/bahan-baku/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   await db.delete(bahanBakuTable).where(eq(bahanBakuTable.id, id));
   res.status(204).end();
 });

@@ -33,7 +33,7 @@ router.post("/absensi", authMiddleware, async (req, res) => {
 });
 
 router.patch("/absensi/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { status, keterangan } = req.body;
   const [a] = await db
     .update(absensiTable)

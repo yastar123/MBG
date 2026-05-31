@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck } from "lucide-react";
+import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };
@@ -44,6 +44,23 @@ export default function PenggunaPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  const toggleActive = useMutation({
+    mutationFn: async (u: User) => {
+      const r = await fetch(`/api/users/${u.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: !u.is_active }),
+      });
+      if (!r.ok) throw new Error();
+      return r.json();
+    },
+    onSuccess: (_data, u) => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: u.is_active ? "Pengguna dinonaktifkan" : "Pengguna diaktifkan" });
+    },
+    onError: () => toast({ title: "Gagal mengubah status", variant: "destructive" }),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -188,9 +205,21 @@ export default function PenggunaPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(u)}>
-                          <Pencil size={13} />
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`h-8 w-8 p-0 ${u.is_active ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50' : 'text-muted-foreground hover:bg-muted'}`}
+                            onClick={() => toggleActive.mutate(u)}
+                            disabled={toggleActive.isPending}
+                            title={u.is_active ? "Nonaktifkan" : "Aktifkan"}
+                          >
+                            {u.is_active ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(u)}>
+                            <Pencil size={13} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

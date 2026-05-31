@@ -24,7 +24,7 @@ router.post("/penerima-manfaat", authMiddleware, async (req, res) => {
 });
 
 router.patch("/penerima-manfaat/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { nama, sekolah, kelas, wilayah, is_aktif } = req.body;
   const [p] = await db
     .update(penerimaManfaatTable)
@@ -36,7 +36,7 @@ router.patch("/penerima-manfaat/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/penerima-manfaat/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   await db.delete(penerimaManfaatTable).where(eq(penerimaManfaatTable.id, id));
   res.status(204).end();
 });

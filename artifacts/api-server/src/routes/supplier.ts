@@ -24,14 +24,14 @@ router.post("/supplier", authMiddleware, async (req, res) => {
 });
 
 router.get("/supplier/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [s] = await db.select().from(supplierTable).where(eq(supplierTable.id, id)).limit(1);
   if (!s) { res.status(404).json({ error: "Supplier tidak ditemukan" }); return; }
   res.json({ ...s, rating: s.rating ? parseFloat(s.rating) : null });
 });
 
 router.patch("/supplier/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { nama, kontak, email, alamat, kategori_bahan, rating, status } = req.body;
   const [s] = await db
     .update(supplierTable)
@@ -43,7 +43,7 @@ router.patch("/supplier/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/supplier/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   await db.delete(supplierTable).where(eq(supplierTable.id, id));
   res.status(204).end();
 });

@@ -33,7 +33,7 @@ router.post("/keuangan/anggaran", authMiddleware, async (req, res) => {
 });
 
 router.patch("/keuangan/anggaran/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { total_anggaran, anggaran_per_porsi } = req.body;
   const [a] = await db
     .update(anggaranTable)

@@ -1,23 +1,27 @@
-import { useEffect } from "react";
-import { useLocation } from "wouter";
-import { customFetch } from "@workspace/api-client-react/src/custom-fetch";
+let _originalFetch: typeof window.fetch | null = null;
+let _currentToken: string | null = null;
 
-// Setup global auth interceptor
 export function setupAuth() {
-  const token = localStorage.getItem("mbg_token");
-  if (token) {
-    const originalFetch = window.fetch;
+  _currentToken = localStorage.getItem("mbg_token");
+
+  if (!_originalFetch) {
+    _originalFetch = window.fetch;
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const isApiCall = typeof input === "string" && input.startsWith("/api");
-      if (isApiCall) {
-        init = init || {};
+      if (isApiCall && _currentToken) {
+        init = init ?? {};
         init.headers = {
           ...init.headers,
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${_currentToken}`,
         };
       }
-      const response = await originalFetch(input, init);
-      if (response.status === 401 && isApiCall && !input.toString().includes("/api/auth/login")) {
+      const response = await _originalFetch!(input, init);
+      if (
+        response.status === 401 &&
+        isApiCall &&
+        !input.toString().includes("/api/auth/login")
+      ) {
+        _currentToken = null;
         localStorage.removeItem("mbg_token");
         window.location.href = "/login";
       }
@@ -28,10 +32,11 @@ export function setupAuth() {
 
 export function setToken(token: string) {
   localStorage.setItem("mbg_token", token);
-  setupAuth();
+  _currentToken = token;
 }
 
 export function clearToken() {
   localStorage.removeItem("mbg_token");
+  _currentToken = null;
   window.location.href = "/login";
 }

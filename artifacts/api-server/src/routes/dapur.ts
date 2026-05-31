@@ -29,7 +29,7 @@ router.post("/dapur", authMiddleware, async (req, res) => {
 });
 
 router.get("/dapur/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [dapur] = await db.select().from(dapurTable).where(eq(dapurTable.id, id)).limit(1);
   if (!dapur) { res.status(404).json({ error: "Dapur tidak ditemukan" }); return; }
   const users = await db.select().from(usersTable);
@@ -37,7 +37,7 @@ router.get("/dapur/:id", authMiddleware, async (req, res) => {
 });
 
 router.patch("/dapur/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { nama, lokasi, alamat, kapasitas_porsi, kepala_dapur_id, status } = req.body;
   const [dapur] = await db
     .update(dapurTable)
@@ -49,7 +49,7 @@ router.patch("/dapur/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/dapur/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   await db.delete(dapurTable).where(eq(dapurTable.id, id));
   res.status(204).end();
 });

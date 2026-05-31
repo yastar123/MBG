@@ -49,7 +49,7 @@ router.post("/pengiriman", authMiddleware, async (req, res) => {
 });
 
 router.get("/pengiriman/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const [p] = await db.select().from(pengirimanTable).where(eq(pengirimanTable.id, id)).limit(1);
   if (!p) { res.status(404).json({ error: "Pengiriman tidak ditemukan" }); return; }
   const dapur = p.dapur_id ? await db.select().from(dapurTable).where(eq(dapurTable.id, p.dapur_id)).limit(1) : [];
@@ -58,7 +58,7 @@ router.get("/pengiriman/:id", authMiddleware, async (req, res) => {
 });
 
 router.patch("/pengiriman/:id", authMiddleware, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params["id"] as string);
   const { driver_id, status, catatan, jumlah_porsi } = req.body;
   const [p] = await db
     .update(pengirimanTable)
