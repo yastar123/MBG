@@ -44,4 +44,10 @@ router.patch("/absensi/:id", authMiddleware, async (req, res) => {
   res.json({ ...a, dapur_nama: null, user_nama: null });
 });
 
+router.delete("/absensi/:id", authMiddleware, async (req, res) => {
+  const id = parseInt(req.params["id"] as string);
+  await db.delete(absensiTable).where(eq(absensiTable.id, id));
+  res.status(204).end();
+});
+
 export default router;

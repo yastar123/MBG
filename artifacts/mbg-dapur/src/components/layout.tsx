@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
@@ -19,9 +19,13 @@ import {
   ChevronRight,
   MoreHorizontal,
   Bell,
+  AlertTriangle,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearToken } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
   SidebarContent,
@@ -38,43 +42,45 @@ import {
 } from "@/components/ui/sidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
+type Alert = { id: number; tipe: string; pesan: string; tingkat: string; created_at: string };
+
 const navGroups = [
   {
     label: "Operasional",
     items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Dapur", href: "/dapur", icon: ChefHat },
-      { name: "Menu", href: "/menu", icon: UtensilsCrossed },
-      { name: "Produksi", href: "/produksi", icon: Utensils },
-      { name: "Absensi", href: "/absensi", icon: CalendarCheck },
+      { name: "Dashboard",  href: "/dashboard",        icon: LayoutDashboard },
+      { name: "Dapur",      href: "/dapur",             icon: ChefHat },
+      { name: "Menu",       href: "/menu",              icon: UtensilsCrossed },
+      { name: "Produksi",   href: "/produksi",          icon: Utensils },
+      { name: "Absensi",    href: "/absensi",           icon: CalendarCheck },
     ],
   },
   {
     label: "Logistik",
     items: [
-      { name: "Gudang", href: "/gudang", icon: PackageSearch },
-      { name: "Distribusi", href: "/distribusi", icon: Truck },
-      { name: "Supplier", href: "/supplier", icon: Building2 },
+      { name: "Gudang",     href: "/gudang",            icon: PackageSearch },
+      { name: "Distribusi", href: "/distribusi",        icon: Truck },
+      { name: "Supplier",   href: "/supplier",          icon: Building2 },
     ],
   },
   {
     label: "Manajemen",
     items: [
       { name: "Penerima Manfaat", href: "/penerima-manfaat", icon: Users },
-      { name: "Keuangan", href: "/keuangan", icon: Wallet },
-      { name: "Pengguna", href: "/pengguna", icon: UserCircle },
-      { name: "Pengaturan", href: "/pengaturan", icon: Settings },
+      { name: "Keuangan",         href: "/keuangan",          icon: Wallet },
+      { name: "Pengguna",         href: "/pengguna",          icon: UserCircle },
+      { name: "Pengaturan",       href: "/pengaturan",        icon: Settings },
     ],
   },
 ];
 
 // Bottom nav items for mobile (5 most-used)
 const bottomNavItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Produksi", href: "/produksi", icon: Utensils },
-  { name: "Gudang", href: "/gudang", icon: PackageSearch },
-  { name: "Distribusi", href: "/distribusi", icon: Truck },
-  { name: "Lainnya", href: null, icon: MoreHorizontal },
+  { name: "Dashboard",  href: "/dashboard",  icon: LayoutDashboard },
+  { name: "Produksi",   href: "/produksi",   icon: Utensils },
+  { name: "Gudang",     href: "/gudang",      icon: PackageSearch },
+  { name: "Distribusi", href: "/distribusi",  icon: Truck },
+  { name: "Lainnya",    href: null,           icon: MoreHorizontal },
 ];
 
 function useDatetime() {
@@ -95,10 +101,7 @@ function isActive(location: string, href: string): boolean {
 function SidebarInner({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
-
-  const handleLogout = () => {
-    logout.mutate(undefined, { onSettled: () => clearToken() });
-  };
+  const handleLogout = () => { logout.mutate(undefined, { onSettled: () => clearToken() }); };
 
   return (
     <>
@@ -126,17 +129,8 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
                   const active = isActive(location, item.href);
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={active}
-                        tooltip={item.name}
-                        className={active ? "nav-active-indicator" : ""}
-                      >
-                        <Link
-                          href={item.href}
-                          onClick={onNavigate}
-                          className="flex items-center gap-3 py-2"
-                        >
+                      <SidebarMenuButton asChild isActive={active} tooltip={item.name} className={active ? "nav-active-indicator" : ""}>
+                        <Link href={item.href} onClick={onNavigate} className="flex items-center gap-3 py-2">
                           <item.icon size={16} />
                           <span className="font-medium text-sm">{item.name}</span>
                         </Link>
@@ -164,7 +158,7 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
                 <p className="text-xs text-sidebar-foreground/45 truncate capitalize">{user.role?.replace(/_/g, ' ') ?? ''}</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
               className="p-1.5 text-sidebar-foreground/35 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-all shrink-0 opacity-0 group-hover:opacity-100 min-w-[32px] min-h-[32px] flex items-center justify-center"
               title="Keluar"
@@ -176,6 +170,97 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
         ) : null}
       </SidebarFooter>
     </>
+  );
+}
+
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { data: alerts } = useQuery<Alert[]>({
+    queryKey: ["/api/dashboard/alerts"],
+    queryFn: async () => (await fetch("/api/dashboard/alerts")).json(),
+    refetchInterval: 60000,
+  });
+
+  const count = Array.isArray(alerts) ? alerts.length : 0;
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+        title="Notifikasi"
+        aria-label="Notifikasi"
+      >
+        <Bell size={16} />
+        {count > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 tabular-nums animate-pop-in">
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+            <div>
+              <p className="font-semibold text-sm">Notifikasi</p>
+              <p className="text-xs text-muted-foreground">{count === 0 ? "Tidak ada peringatan" : `${count} peringatan aktif`}</p>
+            </div>
+            <button onClick={() => setOpen(false)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto">
+            {count === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 gap-2 px-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <CheckCircle2 size={18} className="text-primary" />
+                </div>
+                <p className="text-sm font-medium text-foreground/70">Semua berjalan normal</p>
+                <p className="text-xs text-muted-foreground/60 text-center">Tidak ada stok di bawah minimum</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {(alerts ?? []).map((alert) => (
+                  <div key={alert.id} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                    <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${alert.tingkat === "critical" ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-600"}`}>
+                      <AlertTriangle size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground leading-relaxed">{alert.pesan}</p>
+                      <div className={`mt-1 inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${alert.tingkat === "critical" ? "bg-destructive/10 text-destructive" : "bg-amber-100 text-amber-700"}`}>
+                        {alert.tingkat === "critical" ? "Kritis" : "Peringatan"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {count > 0 && (
+            <div className="px-4 py-2.5 border-t bg-muted/20 text-center">
+              <Link href="/gudang" onClick={() => setOpen(false)} className="text-xs text-primary font-semibold hover:underline">
+                Lihat semua di Gudang →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -230,9 +315,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const dateStr = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location]);
+  useEffect(() => { setMobileOpen(false); }, [location]);
 
   return (
     <SidebarProvider>
@@ -246,10 +329,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile drawer */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent
-            side="left"
-            className="p-0 w-72 bg-sidebar border-r border-sidebar-border [&>button]:hidden"
-          >
+          <SheetContent side="left" className="p-0 w-72 bg-sidebar border-r border-sidebar-border [&>button]:hidden">
             <div className="flex flex-col h-full">
               <SidebarInner location={location} onNavigate={() => setMobileOpen(false)} />
             </div>
@@ -297,14 +377,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="lg:hidden">{now.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
             </div>
 
-            {/* Notification bell */}
-            <button
-              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
-              title="Notifikasi"
-              aria-label="Notifikasi"
-            >
-              <Bell size={16} />
-            </button>
+            {/* Notification bell — connected to real alerts */}
+            <NotificationBell />
           </header>
 
           {/* Page content — extra pb on mobile for bottom nav */}

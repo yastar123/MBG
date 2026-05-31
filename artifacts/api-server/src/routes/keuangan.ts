@@ -44,6 +44,12 @@ router.patch("/keuangan/anggaran/:id", authMiddleware, async (req, res) => {
   res.json({ ...a, total_anggaran: parseFloat(a.total_anggaran), anggaran_per_porsi: a.anggaran_per_porsi ? parseFloat(a.anggaran_per_porsi) : null, dapur_nama: null });
 });
 
+router.delete("/keuangan/anggaran/:id", authMiddleware, async (req, res) => {
+  const id = parseInt(req.params["id"] as string);
+  await db.delete(anggaranTable).where(eq(anggaranTable.id, id));
+  res.status(204).end();
+});
+
 router.get("/keuangan/realisasi", authMiddleware, async (_req, res) => {
   const list = await db.select().from(realisasiTable).orderBy(realisasiTable.tanggal);
   const dapur = await db.select().from(dapurTable);

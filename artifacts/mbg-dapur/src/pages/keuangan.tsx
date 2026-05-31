@@ -36,9 +36,13 @@ export default function KeuanganPage() {
   const { data: realisasi } = useQuery<Realisasi[]>({ queryKey: ["/api/keuangan/realisasi"], queryFn: async () => (await fetch("/api/keuangan/realisasi")).json() });
   const { data: dapurList } = useQuery<Dapur[]>({ queryKey: ["/api/dapur"], queryFn: async () => (await fetch("/api/dapur")).json() });
 
+  // Anggaran dialog state
   const [openAnggaran, setOpenAnggaran] = useState(false);
+  const [editAnggaran, setEditAnggaran] = useState<Anggaran | null>(null);
   const [formAnggaran, setFormAnggaran] = useState(emptyAnggaranForm);
+  const [delAnggaranId, setDelAnggaranId] = useState<number | null>(null);
 
+  // Realisasi dialog state
   const [openRealisasi, setOpenRealisasi] = useState(false);
   const [editRealisasi, setEditRealisasi] = useState<Realisasi | null>(null);
   const [formRealisasi, setFormRealisasi] = useState(emptyRealisasiForm);
@@ -46,18 +50,35 @@ export default function KeuanganPage() {
 
   const saveAnggaran = useMutation({
     mutationFn: async () => {
-      const r = await fetch("/api/keuangan/anggaran", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formAnggaran) });
+      const url = editAnggaran ? `/api/keuangan/anggaran/${editAnggaran.id}` : "/api/keuangan/anggaran";
+      const method = editAnggaran ? "PATCH" : "POST";
+      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(formAnggaran) });
       if (!r.ok) throw new Error();
       return r.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/keuangan/anggaran"] });
       qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] });
-      toast({ title: "Anggaran ditambahkan" });
+      toast({ title: editAnggaran ? "Anggaran diperbarui" : "Anggaran ditambahkan" });
       setOpenAnggaran(false);
+      setEditAnggaran(null);
       setFormAnggaran(emptyAnggaranForm);
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
+  });
+
+  const deleteAnggaran = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/keuangan/anggaran/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/anggaran"] });
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] });
+      toast({ title: "Anggaran dihapus" });
+      setDelAnggaranId(null);
+    },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
   const saveRealisasi = useMutation({
@@ -93,6 +114,12 @@ export default function KeuanganPage() {
     onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
+  function openEditAnggaran(a: Anggaran) {
+    setEditAnggaran(a);
+    setFormAnggaran({ dapur_id: String(a.dapur_id), periode: a.periode, total_anggaran: String(a.total_anggaran), anggaran_per_porsi: a.anggaran_per_porsi?.toString() ?? "" });
+    setOpenAnggaran(true);
+  }
+
   function openEditRealisasi(r: Realisasi) {
     setEditRealisasi(r);
     setFormRealisasi({ dapur_id: String(r.dapur_id), tanggal: r.tanggal, kategori: r.kategori, jumlah: String(r.jumlah), deskripsi: r.deskripsi ?? "" });
@@ -109,6 +136,7 @@ export default function KeuanganPage() {
         <p className="page-subheading">Monitor anggaran dan realisasi pengeluaran</p>
       </div>
 
+      {/* Summary cards */}
       {loadSummary ? (
         <div className="grid gap-4 sm:grid-cols-3">
           {[1,2,3].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
@@ -157,7 +185,7 @@ export default function KeuanganPage() {
             </Card>
           </div>
 
-          {summary.breakdown_kategori.length > 0 && (
+          {Array.isArray(summary.breakdown_kategori) && summary.breakdown_kategori.length > 0 && (
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Breakdown Pengeluaran per Kategori</CardTitle>
@@ -192,6 +220,7 @@ export default function KeuanganPage() {
           <TabsTrigger value="anggaran">Anggaran</TabsTrigger>
         </TabsList>
 
+        {/* Realisasi tab */}
         <TabsContent value="realisasi" className="mt-4">
           <Card className="shadow-sm">
             <CardHeader>
@@ -210,12 +239,13 @@ export default function KeuanganPage() {
             </CardHeader>
             <CardContent className="p-0">
               {(realisasi ?? []).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 gap-3">
-                  <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
-                    <ReceiptText size={22} className="text-muted-foreground" />
+                <div className="empty-state">
+                  <div className="empty-state-icon"><ReceiptText size={22} className="text-muted-foreground" /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground/70">Belum ada catatan realisasi</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">Catat pengeluaran untuk mulai monitoring</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">Belum ada catatan realisasi</p>
-                  <Button size="sm" onClick={() => { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }} className="gap-1.5">
+                  <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }}>
                     <Plus size={14} />Catat Realisasi
                   </Button>
                 </div>
@@ -235,26 +265,32 @@ export default function KeuanganPage() {
                     <tbody>
                       {(realisasi ?? []).map(r => (
                         <tr key={r.id} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="py-3 px-4 text-xs text-muted-foreground">{r.tanggal}</td>
+                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{r.tanggal}</td>
                           <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{r.dapur_nama}</td>
                           <td className="py-3 px-4">
                             <Badge variant="outline" className="text-xs">{kategoriLabel[r.kategori] ?? r.kategori}</Badge>
                           </td>
                           <td className="py-3 px-4 text-muted-foreground text-xs hidden md:table-cell max-w-[180px] truncate">{r.deskripsi ?? "—"}</td>
-                          <td className="py-3 px-4 text-right font-semibold">{fmt(r.jumlah)}</td>
+                          <td className="py-3 px-4 text-right font-semibold tabular-nums">{fmt(r.jumlah)}</td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditRealisasi(r)}>
-                                <Pencil size={13} />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelRealisasiId(r.id)}>
-                                <Trash2 size={13} />
-                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditRealisasi(r)}><Pencil size={13} /></Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelRealisasiId(r.id)}><Trash2 size={13} /></Button>
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr className="border-t bg-muted/20">
+                        <td colSpan={4} className="py-2.5 px-4 text-xs text-muted-foreground font-medium hidden md:table-cell">Total</td>
+                        <td colSpan={2} className="py-2.5 px-4 text-xs text-muted-foreground font-medium md:hidden">Total</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-sm tabular-nums">
+                          {fmt((realisasi ?? []).reduce((s, r) => s + r.jumlah, 0))}
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               )}
@@ -262,6 +298,7 @@ export default function KeuanganPage() {
           </Card>
         </TabsContent>
 
+        {/* Anggaran tab */}
         <TabsContent value="anggaran" className="mt-4">
           <Card className="shadow-sm">
             <CardHeader>
@@ -273,19 +310,20 @@ export default function KeuanganPage() {
                     <Badge variant="secondary" className="text-xs ml-1">{anggaran.length}</Badge>
                   )}
                 </CardTitle>
-                <Button size="sm" onClick={() => { setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5">
+                <Button size="sm" onClick={() => { setEditAnggaran(null); setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5">
                   <Plus size={14} /> Tambah
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
               {(anggaran ?? []).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 gap-3">
-                  <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
-                    <Wallet size={22} className="text-muted-foreground" />
+                <div className="empty-state">
+                  <div className="empty-state-icon"><Wallet size={22} className="text-muted-foreground" /></div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground/70">Belum ada anggaran yang dibuat</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">Buat anggaran per dapur per periode</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">Belum ada anggaran yang dibuat</p>
-                  <Button size="sm" onClick={() => { setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5">
+                  <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setEditAnggaran(null); setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }}>
                     <Plus size={14} />Tambah Anggaran
                   </Button>
                 </div>
@@ -298,6 +336,7 @@ export default function KeuanganPage() {
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Periode</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs">Total Anggaran</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Per Porsi</th>
+                        <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -305,11 +344,27 @@ export default function KeuanganPage() {
                         <tr key={a.id} className="border-b hover:bg-muted/30 transition-colors">
                           <td className="py-3 px-4 font-medium">{a.dapur_nama}</td>
                           <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{a.periode}</td>
-                          <td className="py-3 px-4 text-right font-semibold">{fmt(a.total_anggaran)}</td>
-                          <td className="py-3 px-4 text-right text-muted-foreground hidden md:table-cell">{a.anggaran_per_porsi ? fmt(a.anggaran_per_porsi) : "—"}</td>
+                          <td className="py-3 px-4 text-right font-semibold tabular-nums">{fmt(a.total_anggaran)}</td>
+                          <td className="py-3 px-4 text-right text-muted-foreground hidden md:table-cell tabular-nums">{a.anggaran_per_porsi ? fmt(a.anggaran_per_porsi) : "—"}</td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditAnggaran(a)}><Pencil size={13} /></Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelAnggaranId(a.id)}><Trash2 size={13} /></Button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr className="border-t bg-muted/20">
+                        <td colSpan={2} className="py-2.5 px-4 text-xs text-muted-foreground font-medium hidden sm:table-cell">Total</td>
+                        <td className="py-2.5 px-4 text-xs text-muted-foreground font-medium sm:hidden">Total</td>
+                        <td className="py-2.5 px-4 text-right font-bold text-sm tabular-nums">
+                          {fmt((anggaran ?? []).reduce((s, a) => s + a.total_anggaran, 0))}
+                        </td>
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               )}
@@ -318,19 +373,19 @@ export default function KeuanganPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog: Tambah Anggaran */}
-      <Dialog open={openAnggaran} onOpenChange={setOpenAnggaran}>
+      {/* Dialog: Tambah / Edit Anggaran */}
+      <Dialog open={openAnggaran} onOpenChange={v => { setOpenAnggaran(v); if (!v) { setEditAnggaran(null); setFormAnggaran(emptyAnggaranForm); } }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Tambah Anggaran</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editAnggaran ? "Edit Anggaran" : "Tambah Anggaran"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label>Dapur</Label>
-              <Select value={formAnggaran.dapur_id} onValueChange={v => setFormAnggaran(f => ({...f, dapur_id: v}))}>
+              <Select value={formAnggaran.dapur_id} onValueChange={v => setFormAnggaran(f => ({...f, dapur_id: v}))} disabled={!!editAnggaran}>
                 <SelectTrigger><SelectValue placeholder="Pilih dapur" /></SelectTrigger>
                 <SelectContent>{(dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Periode (bulan)</Label>
-              <Input type="month" value={formAnggaran.periode} onChange={e => setFormAnggaran(f => ({...f, periode: e.target.value}))} />
+              <Input type="month" value={formAnggaran.periode} onChange={e => setFormAnggaran(f => ({...f, periode: e.target.value}))} disabled={!!editAnggaran} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Total Anggaran (Rp)</Label>
@@ -350,8 +405,28 @@ export default function KeuanganPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: Konfirmasi Hapus Anggaran */}
+      <Dialog open={delAnggaranId !== null} onOpenChange={() => setDelAnggaranId(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Hapus Anggaran</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus anggaran{" "}
+            {(() => {
+              const a = (anggaran ?? []).find(x => x.id === delAnggaranId);
+              return a ? <><span className="font-semibold text-foreground">{a.dapur_nama}</span> periode {a.periode}</> : null;
+            })()}?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDelAnggaranId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={() => delAnggaranId && deleteAnggaran.mutate(delAnggaranId)} disabled={deleteAnggaran.isPending}>
+              {deleteAnggaran.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog: Tambah / Edit Realisasi */}
-      <Dialog open={openRealisasi} onOpenChange={v => { setOpenRealisasi(v); if (!v) setEditRealisasi(null); }}>
+      <Dialog open={openRealisasi} onOpenChange={v => { setOpenRealisasi(v); if (!v) { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editRealisasi ? "Edit Realisasi" : "Catat Realisasi Pengeluaran"}</DialogTitle>
@@ -388,7 +463,7 @@ export default function KeuanganPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setOpenRealisasi(false); setEditRealisasi(null); }}>Batal</Button>
+            <Button variant="outline" onClick={() => setOpenRealisasi(false)}>Batal</Button>
             <Button onClick={() => saveRealisasi.mutate()} disabled={saveRealisasi.isPending || !formRealisasi.dapur_id || !formRealisasi.jumlah}>
               {saveRealisasi.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
@@ -398,7 +473,7 @@ export default function KeuanganPage() {
 
       {/* Dialog: Konfirmasi Hapus Realisasi */}
       <Dialog open={delRealisasiId !== null} onOpenChange={() => setDelRealisasiId(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Hapus Realisasi</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             Yakin ingin menghapus catatan pengeluaran ini?{" "}
