@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Utensils, Plus, Pencil, TrendingUp, TrendingDown, CalendarDays, Target } from "lucide-react";
+import { Utensils, Plus, Pencil, TrendingUp, TrendingDown, CalendarDays, Target, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 
 type Produksi = {
   id: number; dapur_id: number; menu_id: number; tanggal: string;
@@ -40,6 +41,7 @@ export default function ProduksiPage() {
   const [editForm, setEditForm] = useState({ realisasi_porsi: "", status: "", catatan_qc: "" });
   const [openAdd, setOpenAdd] = useState(false);
   const [addForm, setAddForm] = useState(emptyAddForm);
+  const [search, setSearch] = useState("");
 
   const create = useMutation({
     mutationFn: async () => {
@@ -74,6 +76,12 @@ export default function ProduksiPage() {
 
   const pencapaianColor = persen >= 95 ? "text-primary" : persen >= 80 ? "text-amber-600" : "text-destructive";
   const pencapaianBg = persen >= 95 ? "bg-primary/10 text-primary" : persen >= 80 ? "bg-amber-100 text-amber-600" : "bg-red-100 text-destructive";
+
+  const filtered = (data ?? []).filter(p =>
+    !search ||
+    (p.dapur_nama ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    (p.menu_nama ?? "").toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-8">
@@ -138,11 +146,22 @@ export default function ProduksiPage() {
       ) : (
         <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarDays size={16} className="text-primary" />
-              Data Produksi Terbaru
-              <Badge variant="secondary" className="text-xs ml-1">{(data ?? []).length}</Badge>
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarDays size={16} className="text-primary" />
+                Data Produksi
+                <Badge variant="secondary" className="text-xs ml-1">{filtered.length}</Badge>
+              </CardTitle>
+              <div className="relative max-w-xs w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                <Input
+                  placeholder="Cari dapur atau menu..."
+                  className="pl-9 h-9 text-sm"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {(data ?? []).length === 0 ? (
@@ -151,6 +170,10 @@ export default function ProduksiPage() {
                   <Utensils size={22} className="text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">Belum ada data produksi</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <p className="text-sm text-muted-foreground">Tidak ditemukan hasil pencarian</p>
               </div>
             ) : (
               <div className="table-responsive">
@@ -167,7 +190,7 @@ export default function ProduksiPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(data ?? []).slice(0, 30).map(p => (
+                    {filtered.slice(0, 30).map(p => (
                       <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${p.tanggal === today ? 'bg-primary/3' : ''}`}>
                         <td className="py-3 px-4 text-xs text-muted-foreground">{p.tanggal}</td>
                         <td className="py-3 px-4 hidden sm:table-cell text-sm">{p.dapur_nama}</td>
@@ -246,8 +269,15 @@ export default function ProduksiPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label>Catatan QC <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input value={editForm.catatan_qc} onChange={e => setEditForm(f => ({...f, catatan_qc: e.target.value}))} placeholder="Catatan hasil quality control..." />
+            <div className="space-y-1.5">
+              <Label>Catatan QC <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Textarea
+                value={editForm.catatan_qc}
+                onChange={e => setEditForm(f => ({...f, catatan_qc: e.target.value}))}
+                placeholder="Catatan hasil quality control..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
           </div>
           <DialogFooter>

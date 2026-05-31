@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarCheck, Plus, CheckCircle, XCircle, Clock, Search, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 type Absensi = { id: number; dapur_id: number; user_id: number; tanggal: string; status: string; keterangan: string | null; dapur_nama: string | null; user_nama: string | null };
 type Dapur = { id: number; nama: string };
@@ -193,7 +194,13 @@ export default function AbsensiPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Keterangan <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input value={form.keterangan} onChange={e => setForm(f => ({...f, keterangan: e.target.value}))} placeholder="Tambahkan keterangan..." />
+              <Textarea
+                value={form.keterangan}
+                onChange={e => setForm(f => ({...f, keterangan: e.target.value}))}
+                placeholder="Sakit, izin acara keluarga, dll..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
           </div>
           <DialogFooter>
