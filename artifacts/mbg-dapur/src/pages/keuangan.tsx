@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wallet, TrendingUp, Plus, PiggyBank, ReceiptText } from "lucide-react";
+import { Wallet, TrendingUp, Plus, PiggyBank, ReceiptText, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -37,8 +38,11 @@ export default function KeuanganPage() {
 
   const [openAnggaran, setOpenAnggaran] = useState(false);
   const [formAnggaran, setFormAnggaran] = useState(emptyAnggaranForm);
+
   const [openRealisasi, setOpenRealisasi] = useState(false);
+  const [editRealisasi, setEditRealisasi] = useState<Realisasi | null>(null);
   const [formRealisasi, setFormRealisasi] = useState(emptyRealisasiForm);
+  const [delRealisasiId, setDelRealisasiId] = useState<number | null>(null);
 
   const saveAnggaran = useMutation({
     mutationFn: async () => {
@@ -46,19 +50,54 @@ export default function KeuanganPage() {
       if (!r.ok) throw new Error();
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/keuangan/anggaran"] }); qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] }); toast({ title: "Anggaran ditambahkan" }); setOpenAnggaran(false); setFormAnggaran(emptyAnggaranForm); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/anggaran"] });
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] });
+      toast({ title: "Anggaran ditambahkan" });
+      setOpenAnggaran(false);
+      setFormAnggaran(emptyAnggaranForm);
+    },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
 
   const saveRealisasi = useMutation({
     mutationFn: async () => {
-      const r = await fetch("/api/keuangan/realisasi", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formRealisasi) });
+      const url = editRealisasi ? `/api/keuangan/realisasi/${editRealisasi.id}` : "/api/keuangan/realisasi";
+      const method = editRealisasi ? "PATCH" : "POST";
+      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(formRealisasi) });
       if (!r.ok) throw new Error();
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/keuangan/realisasi"] }); qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] }); toast({ title: "Realisasi dicatat" }); setOpenRealisasi(false); setFormRealisasi(emptyRealisasiForm); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/realisasi"] });
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] });
+      toast({ title: editRealisasi ? "Realisasi diperbarui" : "Realisasi dicatat" });
+      setOpenRealisasi(false);
+      setEditRealisasi(null);
+      setFormRealisasi(emptyRealisasiForm);
+    },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
+
+  const deleteRealisasi = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/keuangan/realisasi/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/realisasi"] });
+      qc.invalidateQueries({ queryKey: ["/api/keuangan/summary"] });
+      toast({ title: "Realisasi dihapus" });
+      setDelRealisasiId(null);
+    },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
+  });
+
+  function openEditRealisasi(r: Realisasi) {
+    setEditRealisasi(r);
+    setFormRealisasi({ dapur_id: String(r.dapur_id), tanggal: r.tanggal, kategori: r.kategori, jumlah: String(r.jumlah), deskripsi: r.deskripsi ?? "" });
+    setOpenRealisasi(true);
+  }
 
   const persen = summary?.persen_terpakai ?? 0;
   const isOverBudget = (summary?.sisa_anggaran ?? 0) < 0;
@@ -113,7 +152,7 @@ export default function KeuanganPage() {
                 <p className={`text-xl font-bold mt-2 ${isOverBudget ? "text-destructive" : "text-green-700"}`}>
                   {fmt(summary.sisa_anggaran)}
                 </p>
-                {isOverBudget && <p className="text-xs text-destructive mt-1">Melebihi anggaran!</p>}
+                {isOverBudget && <p className="text-xs text-destructive mt-1 font-medium">Melebihi anggaran!</p>}
               </CardContent>
             </Card>
           </div>
@@ -127,15 +166,15 @@ export default function KeuanganPage() {
                 <div className="h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={summary.breakdown_kategori} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border) / 0.6)" />
                       <XAxis dataKey="kategori" tickFormatter={k => kategoriLabel[k] ?? k} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={v => `${(v/1e6).toFixed(1)}jt`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                       <Tooltip
-                        formatter={(v: number) => fmt(v)}
+                        formatter={(v: number) => [fmt(v), "Pengeluaran"]}
                         labelFormatter={k => kategoriLabel[k as string] ?? k}
-                        contentStyle={{ borderRadius: '10px', border: '1px solid hsl(var(--border))', fontSize: '12px', backgroundColor: 'hsl(var(--card))' }}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', fontSize: '12px', backgroundColor: 'hsl(var(--card))', padding: '10px 14px' }}
                       />
-                      <Bar dataKey="jumlah" radius={[6, 6, 0, 0]}>
+                      <Bar dataKey="jumlah" radius={[6, 6, 0, 0]} maxBarSize={60}>
                         {summary.breakdown_kategori.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Bar>
                     </BarChart>
@@ -148,7 +187,10 @@ export default function KeuanganPage() {
       ) : null}
 
       <Tabs defaultValue="realisasi" className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-        <TabsList><TabsTrigger value="realisasi">Realisasi</TabsTrigger><TabsTrigger value="anggaran">Anggaran</TabsTrigger></TabsList>
+        <TabsList>
+          <TabsTrigger value="realisasi">Realisasi</TabsTrigger>
+          <TabsTrigger value="anggaran">Anggaran</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="realisasi" className="mt-4">
           <Card className="shadow-sm">
@@ -157,8 +199,11 @@ export default function KeuanganPage() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <ReceiptText size={16} className="text-primary" />
                   Realisasi Pengeluaran
+                  {realisasi && realisasi.length > 0 && (
+                    <Badge variant="secondary" className="text-xs ml-1">{realisasi.length}</Badge>
+                  )}
                 </CardTitle>
-                <Button size="sm" onClick={() => { setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }} className="gap-1.5">
+                <Button size="sm" onClick={() => { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }} className="gap-1.5">
                   <Plus size={14} /> Catat
                 </Button>
               </div>
@@ -170,7 +215,9 @@ export default function KeuanganPage() {
                     <ReceiptText size={22} className="text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground">Belum ada catatan realisasi</p>
-                  <Button size="sm" onClick={() => { setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }} className="gap-1.5"><Plus size={14} />Catat Realisasi</Button>
+                  <Button size="sm" onClick={() => { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }} className="gap-1.5">
+                    <Plus size={14} />Catat Realisasi
+                  </Button>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -182,6 +229,7 @@ export default function KeuanganPage() {
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Kategori</th>
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Deskripsi</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs">Jumlah</th>
+                        <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -194,6 +242,16 @@ export default function KeuanganPage() {
                           </td>
                           <td className="py-3 px-4 text-muted-foreground text-xs hidden md:table-cell max-w-[180px] truncate">{r.deskripsi ?? "—"}</td>
                           <td className="py-3 px-4 text-right font-semibold">{fmt(r.jumlah)}</td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEditRealisasi(r)}>
+                                <Pencil size={13} />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelRealisasiId(r.id)}>
+                                <Trash2 size={13} />
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -211,6 +269,9 @@ export default function KeuanganPage() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <Wallet size={16} className="text-primary" />
                   Anggaran per Dapur
+                  {anggaran && anggaran.length > 0 && (
+                    <Badge variant="secondary" className="text-xs ml-1">{anggaran.length}</Badge>
+                  )}
                 </CardTitle>
                 <Button size="sm" onClick={() => { setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5">
                   <Plus size={14} /> Tambah
@@ -224,7 +285,9 @@ export default function KeuanganPage() {
                     <Wallet size={22} className="text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground">Belum ada anggaran yang dibuat</p>
-                  <Button size="sm" onClick={() => { setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5"><Plus size={14} />Tambah Anggaran</Button>
+                  <Button size="sm" onClick={() => { setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5">
+                    <Plus size={14} />Tambah Anggaran
+                  </Button>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -255,6 +318,7 @@ export default function KeuanganPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Dialog: Tambah Anggaran */}
       <Dialog open={openAnggaran} onOpenChange={setOpenAnggaran}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>Tambah Anggaran</DialogTitle></DialogHeader>
@@ -286,19 +350,22 @@ export default function KeuanganPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={openRealisasi} onOpenChange={setOpenRealisasi}>
+      {/* Dialog: Tambah / Edit Realisasi */}
+      <Dialog open={openRealisasi} onOpenChange={v => { setOpenRealisasi(v); if (!v) setEditRealisasi(null); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Catat Realisasi Pengeluaran</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editRealisasi ? "Edit Realisasi" : "Catat Realisasi Pengeluaran"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label>Dapur</Label>
-              <Select value={formRealisasi.dapur_id} onValueChange={v => setFormRealisasi(f => ({...f, dapur_id: v}))}>
+              <Select value={formRealisasi.dapur_id} onValueChange={v => setFormRealisasi(f => ({...f, dapur_id: v}))} disabled={!!editRealisasi}>
                 <SelectTrigger><SelectValue placeholder="Pilih dapur" /></SelectTrigger>
                 <SelectContent>{(dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Tanggal</Label>
-                <Input type="date" value={formRealisasi.tanggal} onChange={e => setFormRealisasi(f => ({...f, tanggal: e.target.value}))} />
+                <Input type="date" value={formRealisasi.tanggal} onChange={e => setFormRealisasi(f => ({...f, tanggal: e.target.value}))} disabled={!!editRealisasi} />
               </div>
               <div className="space-y-1.5"><Label>Kategori</Label>
                 <Select value={formRealisasi.kategori} onValueChange={v => setFormRealisasi(f => ({...f, kategori: v}))}>
@@ -311,13 +378,39 @@ export default function KeuanganPage() {
               <Input type="number" value={formRealisasi.jumlah} onChange={e => setFormRealisasi(f => ({...f, jumlah: e.target.value}))} placeholder="1500000" />
             </div>
             <div className="space-y-1.5"><Label>Deskripsi <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input value={formRealisasi.deskripsi} onChange={e => setFormRealisasi(f => ({...f, deskripsi: e.target.value}))} placeholder="Pembelian bahan baku harian..." />
+              <Textarea
+                value={formRealisasi.deskripsi}
+                onChange={e => setFormRealisasi(f => ({...f, deskripsi: e.target.value}))}
+                placeholder="Pembelian bahan baku harian..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenRealisasi(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => { setOpenRealisasi(false); setEditRealisasi(null); }}>Batal</Button>
             <Button onClick={() => saveRealisasi.mutate()} disabled={saveRealisasi.isPending || !formRealisasi.dapur_id || !formRealisasi.jumlah}>
               {saveRealisasi.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Konfirmasi Hapus Realisasi */}
+      <Dialog open={delRealisasiId !== null} onOpenChange={() => setDelRealisasiId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Hapus Realisasi</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus catatan pengeluaran ini?{" "}
+            {delRealisasiId && (() => {
+              const r = (realisasi ?? []).find(x => x.id === delRealisasiId);
+              return r ? <><span className="font-semibold text-foreground">{kategoriLabel[r.kategori]} — {fmt(r.jumlah)}</span></> : null;
+            })()}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDelRealisasiId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={() => delRealisasiId && deleteRealisasi.mutate(delRealisasiId)} disabled={deleteRealisasi.isPending}>
+              {deleteRealisasi.isPending ? "Menghapus..." : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

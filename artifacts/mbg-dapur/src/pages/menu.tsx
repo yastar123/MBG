@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UtensilsCrossed, Plus, Pencil, Trash2, Flame, CalendarDays, Search } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 type Menu = { id: number; nama: string; deskripsi: string | null; tanggal: string; kategori: string; target_porsi: number; kalori: number | null };
@@ -200,7 +201,16 @@ export default function MenuPage() {
           <DialogHeader><DialogTitle>{editing ? "Edit Menu" : "Tambah Menu Baru"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label>Nama Menu</Label><Input value={form.nama} onChange={e => setForm(f => ({...f, nama: e.target.value}))} placeholder="Nasi Ayam Kecap" /></div>
-            <div className="space-y-1.5"><Label>Deskripsi <span className="text-muted-foreground text-xs">(opsional)</span></Label><Input value={form.deskripsi} onChange={e => setForm(f => ({...f, deskripsi: e.target.value}))} placeholder="Nasi putih dengan ayam kecap..." /></div>
+            <div className="space-y-1.5">
+              <Label>Deskripsi <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Textarea
+                value={form.deskripsi}
+                onChange={e => setForm(f => ({...f, deskripsi: e.target.value}))}
+                placeholder="Nasi putih dengan ayam kecap..."
+                rows={2}
+                className="resize-none"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Tanggal</Label><Input type="date" value={form.tanggal} onChange={e => setForm(f => ({...f, tanggal: e.target.value}))} /></div>
               <div className="space-y-1.5"><Label>Kategori</Label>

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChefHat, Plus, Pencil, Trash2, MapPin, Users, UtensilsCrossed } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 type Dapur = {
@@ -198,10 +199,12 @@ export default function DapurPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Alamat Lengkap <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input
+              <Textarea
                 value={form.alamat}
                 onChange={e => setForm(f => ({...f, alamat: e.target.value}))}
-                placeholder="Jl. Contoh No. 1"
+                placeholder="Jl. Contoh No. 1, Kel. Contoh, Kota..."
+                rows={2}
+                className="resize-none"
               />
             </div>
             <div className="space-y-1.5">

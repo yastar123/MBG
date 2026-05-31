@@ -67,6 +67,25 @@ router.post("/keuangan/realisasi", authMiddleware, async (req, res) => {
   res.status(201).json({ ...r, jumlah: parseFloat(r.jumlah), dapur_nama: null });
 });
 
+router.patch("/keuangan/realisasi/:id", authMiddleware, async (req, res) => {
+  const id = parseInt(req.params["id"] as string);
+  const { kategori, jumlah, deskripsi } = req.body;
+  const [r] = await db
+    .update(realisasiTable)
+    .set({ kategori, jumlah: jumlah ? String(jumlah) : undefined, deskripsi })
+    .where(eq(realisasiTable.id, id))
+    .returning();
+  if (!r) { res.status(404).json({ error: "Realisasi tidak ditemukan" }); return; }
+  const dapur = await db.select().from(dapurTable);
+  res.json({ ...r, jumlah: parseFloat(r.jumlah), dapur_nama: dapur.find((d) => d.id === r.dapur_id)?.nama ?? null });
+});
+
+router.delete("/keuangan/realisasi/:id", authMiddleware, async (req, res) => {
+  const id = parseInt(req.params["id"] as string);
+  await db.delete(realisasiTable).where(eq(realisasiTable.id, id));
+  res.status(204).end();
+});
+
 router.get("/keuangan/summary", authMiddleware, async (_req, res) => {
   const anggaran = await db.select().from(anggaranTable);
   const realisasi = await db.select().from(realisasiTable);

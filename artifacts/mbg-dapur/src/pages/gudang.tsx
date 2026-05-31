@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle, ClipboardList } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -402,8 +403,15 @@ export default function GudangPage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-1.5"><Label>Catatan <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input value={formPenerimaan.catatan} onChange={e => setFormPenerimaan(f => ({...f, catatan: e.target.value}))} placeholder="Kondisi bahan, kuantitas, dll..." />
+            <div className="space-y-1.5">
+              <Label>Catatan <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Textarea
+                value={formPenerimaan.catatan}
+                onChange={e => setFormPenerimaan(f => ({...f, catatan: e.target.value}))}
+                placeholder="Kondisi bahan, kuantitas, dll..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
           </div>
           <DialogFooter>

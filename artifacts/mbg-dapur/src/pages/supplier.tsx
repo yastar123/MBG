@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,7 +17,32 @@ type Supplier = {
   alamat: string | null; kategori_bahan: string | null; rating: number | null; status: string;
 };
 
-const emptyForm = { nama: "", kontak: "", email: "", alamat: "", kategori_bahan: "", status: "aktif" };
+const emptyForm = { nama: "", kontak: "", email: "", alamat: "", kategori_bahan: "", rating: "", status: "aktif" };
+
+function StarRating({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const num = parseFloat(value) || 0;
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map(i => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(num === i ? "" : String(i))}
+          className="p-0.5 rounded transition-colors hover:scale-110 active:scale-95"
+        >
+          <Star
+            size={22}
+            className={i <= num ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}
+            strokeWidth={1.5}
+          />
+        </button>
+      ))}
+      {value && (
+        <span className="text-xs text-amber-600 font-semibold ml-1">{parseFloat(value).toFixed(1)}</span>
+      )}
+    </div>
+  );
+}
 
 export default function SupplierPage() {
   const qc = useQueryClient();
@@ -32,7 +58,8 @@ export default function SupplierPage() {
     mutationFn: async () => {
       const url = editing ? `/api/supplier/${editing.id}` : "/api/supplier";
       const method = editing ? "PATCH" : "POST";
-      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const payload = { ...form, rating: form.rating ? parseFloat(form.rating) : null };
+      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error();
       return r.json();
     },
@@ -56,7 +83,7 @@ export default function SupplierPage() {
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
   function openEdit(s: Supplier) {
     setEditing(s);
-    setForm({ nama: s.nama, kontak: s.kontak, email: s.email ?? "", alamat: s.alamat ?? "", kategori_bahan: s.kategori_bahan ?? "", status: s.status });
+    setForm({ nama: s.nama, kontak: s.kontak, email: s.email ?? "", alamat: s.alamat ?? "", kategori_bahan: s.kategori_bahan ?? "", rating: s.rating?.toString() ?? "", status: s.status });
     setOpen(true);
   }
 
@@ -97,7 +124,7 @@ export default function SupplierPage() {
           <div className="relative max-w-xs w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             <Input
-              placeholder="Cari supplier..."
+              placeholder="Cari supplier atau kategori..."
               className="pl-9 h-9 text-sm"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -107,9 +134,8 @@ export default function SupplierPage() {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Skeleton className="h-36 rounded-xl" />
-            <Skeleton className="h-36 rounded-xl" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1,2,3].map(i => <Skeleton key={i} className="h-36 rounded-xl" />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -125,7 +151,7 @@ export default function SupplierPage() {
             {!search && <Button onClick={openAdd} size="sm" className="gap-2"><Plus size={14} />Tambah Supplier</Button>}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((s, idx) => (
               <Card
                 key={s.id}
@@ -143,7 +169,7 @@ export default function SupplierPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{s.kategori_bahan ?? "Umum"}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                       {s.rating !== null && (
                         <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                           <Star size={11} className="text-amber-500" fill="currentColor" />
@@ -162,11 +188,11 @@ export default function SupplierPage() {
                     {s.email && (
                       <div className="flex items-center gap-2">
                         <Mail size={12} className="shrink-0" />
-                        <span className="text-xs truncate">{s.email}</span>
+                        <a href={`mailto:${s.email}`} className="text-xs truncate hover:text-primary transition-colors">{s.email}</a>
                       </div>
                     )}
                     {s.alamat && (
-                      <p className="text-xs leading-relaxed line-clamp-1">{s.alamat}</p>
+                      <p className="text-xs leading-relaxed line-clamp-2">{s.alamat}</p>
                     )}
                   </div>
 
@@ -197,7 +223,13 @@ export default function SupplierPage() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>Alamat <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input value={form.alamat} onChange={e => setForm(f => ({...f, alamat: e.target.value}))} placeholder="Jl. Contoh No. 1" />
+              <Textarea
+                value={form.alamat}
+                onChange={e => setForm(f => ({...f, alamat: e.target.value}))}
+                placeholder="Jl. Contoh No. 1, Kota..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Kategori Bahan</Label>
@@ -212,6 +244,10 @@ export default function SupplierPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Rating <span className="text-muted-foreground text-xs">(opsional, klik bintang)</span></Label>
+              <StarRating value={form.rating} onChange={v => setForm(f => ({...f, rating: v}))} />
             </div>
           </div>
           <DialogFooter>

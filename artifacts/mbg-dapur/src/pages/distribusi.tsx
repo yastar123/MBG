@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, Plus, Pencil, CheckCircle, Clock, XCircle, MapPin } from "lucide-react";
+import { Truck, Plus, Pencil, CheckCircle, Clock, XCircle, MapPin, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Pengiriman = {
@@ -40,6 +41,7 @@ export default function DistribusiPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pengiriman | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [search, setSearch] = useState("");
 
   const drivers = userList?.filter(u => u.role === "driver") ?? [];
 
@@ -69,6 +71,13 @@ export default function DistribusiPage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const todayList = data?.filter(p => p.tanggal === today) ?? [];
+
+  const filtered = (data ?? []).filter(p =>
+    !search ||
+    p.tujuan.toLowerCase().includes(search.toLowerCase()) ||
+    (p.dapur_nama ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    (p.driver_nama ?? "").toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-8">
@@ -155,12 +164,32 @@ export default function DistribusiPage() {
 
       <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.15s' }}>
         <CardHeader>
-          <CardTitle className="text-base">Semua Pengiriman</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <CardTitle className="text-base">
+              Semua Pengiriman
+              {filtered.length > 0 && (
+                <Badge variant="secondary" className="text-xs ml-2">{filtered.length}</Badge>
+              )}
+            </CardTitle>
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+              <Input
+                placeholder="Cari tujuan, dapur, driver..."
+                className="pl-9 h-9 text-sm"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {(data ?? []).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <p className="text-sm text-muted-foreground">Belum ada data pengiriman</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <p className="text-sm text-muted-foreground">Tidak ditemukan hasil pencarian</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -176,7 +205,7 @@ export default function DistribusiPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(data ?? []).slice(0, 30).map(p => (
+                  {filtered.slice(0, 50).map(p => (
                     <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${p.tanggal === today ? 'bg-primary/3' : ''}`}>
                       <td className="py-3 px-4 text-xs text-muted-foreground">{p.tanggal}</td>
                       <td className="py-3 px-4 font-medium">{p.tujuan}</td>
@@ -196,6 +225,11 @@ export default function DistribusiPage() {
                   ))}
                 </tbody>
               </table>
+              {filtered.length > 50 && (
+                <p className="text-xs text-muted-foreground text-center py-3 border-t">
+                  Menampilkan 50 dari {filtered.length} pengiriman
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -240,7 +274,13 @@ export default function DistribusiPage() {
               </div>
             )}
             <div className="space-y-1.5"><Label>Catatan <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Input value={form.catatan} onChange={e => setForm(f => ({...f, catatan: e.target.value}))} placeholder="Catatan tambahan..." />
+              <Textarea
+                value={form.catatan}
+                onChange={e => setForm(f => ({...f, catatan: e.target.value}))}
+                placeholder="Catatan tambahan tentang pengiriman..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
           </div>
           <DialogFooter>
