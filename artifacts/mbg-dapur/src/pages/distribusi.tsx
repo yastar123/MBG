@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, Plus, Pencil, CheckCircle, Clock, XCircle, MapPin, Search } from "lucide-react";
+import { Truck, Plus, Pencil, CheckCircle, Clock, XCircle, MapPin, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Pengiriman = {
@@ -42,6 +42,7 @@ export default function DistribusiPage() {
   const [editing, setEditing] = useState<Pengiriman | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const drivers = userList?.filter(u => u.role === "driver") ?? [];
 
@@ -56,8 +57,11 @@ export default function DistribusiPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/pengiriman"] });
       qc.invalidateQueries({ queryKey: ["/api/pengiriman/status-summary"] });
+      qc.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       toast({ title: editing ? "Pengiriman diperbarui" : "Pengiriman ditambahkan" });
       setOpen(false);
+      setEditing(null);
+      setForm(emptyForm);
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
@@ -72,12 +76,14 @@ export default function DistribusiPage() {
   const today = new Date().toISOString().slice(0, 10);
   const todayList = data?.filter(p => p.tanggal === today) ?? [];
 
-  const filtered = (data ?? []).filter(p =>
-    !search ||
-    p.tujuan.toLowerCase().includes(search.toLowerCase()) ||
-    (p.dapur_nama ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    (p.driver_nama ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = (data ?? []).filter(p => {
+    const matchSearch = !search || p.tujuan.toLowerCase().includes(search.toLowerCase()) || (p.dapur_nama ?? "").toLowerCase().includes(search.toLowerCase()) || (p.driver_nama ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = !statusFilter || p.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const totalPorsi = (data ?? []).reduce((s, p) => s + p.jumlah_porsi, 0);
+  const todayPorsi = todayList.reduce((s, p) => s + p.jumlah_porsi, 0);
 
   return (
     <div className="space-y-8">
@@ -89,44 +95,64 @@ export default function DistribusiPage() {
         <Button onClick={openAdd} className="gap-2 shrink-0"><Plus size={16} /> Tambah Pengiriman</Button>
       </div>
 
+      {/* Status summary cards */}
       {summary && (
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-5 animate-slide-up">
+        <div className="grid gap-3 grid-cols-3 sm:grid-cols-5 animate-slide-up">
           {Object.entries(statusConfig).map(([key, cfg]) => {
             const Icon = cfg.icon;
+            const count = (summary as Record<string, number>)[key] ?? 0;
+            const isActive = statusFilter === key;
             return (
-              <Card key={key} className="shadow-sm text-center card-hover">
-                <CardContent className="pt-4 pb-4">
-                  <div className={`w-8 h-8 ${cfg.iconBg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
-                    <Icon size={15} className={cfg.iconColor} />
-                  </div>
-                  <p className="text-2xl font-bold">{(summary as Record<string, number>)[key] ?? 0}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{cfg.label}</p>
-                </CardContent>
-              </Card>
+              <button
+                key={key}
+                onClick={() => setStatusFilter(isActive ? null : key)}
+                className={`text-center rounded-xl border p-3 transition-all duration-200 hover:shadow-md active:scale-[0.97] ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-card border-border hover:bg-muted/50"
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2 ${isActive ? "bg-primary-foreground/20" : cfg.iconBg}`}>
+                  <Icon size={15} className={isActive ? "text-primary-foreground" : cfg.iconColor} />
+                </div>
+                <p className={`text-2xl font-bold tabular-nums ${isActive ? "text-primary-foreground" : ""}`}>{count}</p>
+                <p className={`text-xs mt-0.5 ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{cfg.label}</p>
+              </button>
             );
           })}
         </div>
       )}
 
+      {/* Today's deliveries */}
       {isLoading ? (
         <Skeleton className="h-64 w-full rounded-xl" />
       ) : (
         <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Truck size={16} className="text-primary" />
-              Pengiriman Hari Ini
-              <Badge variant="secondary" className="text-xs ml-1">{todayList.length}</Badge>
-            </CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Truck size={16} className="text-primary" />
+                Pengiriman Hari Ini
+                <Badge variant="secondary" className="text-xs ml-1">{todayList.length}</Badge>
+              </CardTitle>
+              {todayPorsi > 0 && (
+                <span className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full border border-border/40">
+                  {todayPorsi.toLocaleString("id-ID")} porsi total
+                </span>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {todayList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+              <div className="empty-state py-10">
+                <div className="empty-state-icon">
                   <Truck size={22} className="text-muted-foreground" />
                 </div>
-                <p className="text-sm text-muted-foreground">Belum ada pengiriman hari ini</p>
-                <Button size="sm" onClick={openAdd} className="gap-1.5"><Plus size={14} />Tambah Pengiriman</Button>
+                <div>
+                  <p className="text-sm font-semibold text-foreground/70">Belum ada pengiriman hari ini</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">Jadwalkan pengiriman ke sekolah</p>
+                </div>
+                <Button size="sm" onClick={openAdd} className="gap-1.5 mt-1"><Plus size={14} />Tambah Pengiriman</Button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -162,34 +188,62 @@ export default function DistribusiPage() {
         </Card>
       )}
 
+      {/* All deliveries with filter */}
       <Card className="shadow-sm animate-slide-up" style={{ animationDelay: '0.15s' }}>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <CardTitle className="text-base">
+            <CardTitle className="text-base flex items-center gap-2">
               Semua Pengiriman
               {filtered.length > 0 && (
-                <Badge variant="secondary" className="text-xs ml-2">{filtered.length}</Badge>
+                <Badge variant="secondary" className="text-xs ml-1">{filtered.length}</Badge>
               )}
             </CardTitle>
-            <div className="relative max-w-xs w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-              <Input
-                placeholder="Cari tujuan, dapur, driver..."
-                className="pl-9 h-9 text-sm"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+            <div className="flex items-center gap-2 flex-wrap">
+              {statusFilter && (
+                <button
+                  onClick={() => setStatusFilter(null)}
+                  className="flex items-center gap-1 text-xs text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full font-medium hover:bg-primary/20 transition-colors"
+                >
+                  {statusConfig[statusFilter]?.label}
+                  <X size={11} />
+                </button>
+              )}
+              {totalPorsi > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {totalPorsi.toLocaleString("id-ID")} porsi total
+                </span>
+              )}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                <Input
+                  placeholder="Cari tujuan, dapur, driver..."
+                  className="pl-9 h-9 text-sm w-44 sm:w-52"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {(data ?? []).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <p className="text-sm text-muted-foreground">Belum ada data pengiriman</p>
+            <div className="empty-state">
+              <div className="empty-state-icon"><Truck size={22} className="text-muted-foreground" /></div>
+              <div>
+                <p className="text-sm font-semibold text-foreground/70">Belum ada data pengiriman</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">Tambahkan pengiriman pertama</p>
+              </div>
+              <Button size="sm" onClick={openAdd} className="gap-1.5 mt-1"><Plus size={14} />Tambah Pengiriman</Button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <p className="text-sm text-muted-foreground">Tidak ditemukan hasil pencarian</p>
+            <div className="empty-state py-10">
+              <p className="text-sm font-medium text-foreground/70">Tidak ada hasil untuk filter ini</p>
+              <Button size="sm" variant="outline" onClick={() => { setSearch(""); setStatusFilter(null); }} className="gap-1.5 mt-1">Reset filter</Button>
             </div>
           ) : (
             <div className="table-responsive">
@@ -200,17 +254,19 @@ export default function DistribusiPage() {
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Tujuan</th>
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Dapur</th>
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Porsi</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden lg:table-cell">Driver</th>
                     <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
                     <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.slice(0, 50).map(p => (
-                    <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${p.tanggal === today ? 'bg-primary/3' : ''}`}>
-                      <td className="py-3 px-4 text-xs text-muted-foreground">{p.tanggal}</td>
+                    <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${p.tanggal === today ? 'bg-primary/[0.02]' : ''}`}>
+                      <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{p.tanggal}</td>
                       <td className="py-3 px-4 font-medium">{p.tujuan}</td>
                       <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{p.dapur_nama}</td>
-                      <td className="py-3 px-4 text-right hidden md:table-cell">{p.jumlah_porsi.toLocaleString("id-ID")}</td>
+                      <td className="py-3 px-4 text-right hidden md:table-cell tabular-nums">{p.jumlah_porsi.toLocaleString("id-ID")}</td>
+                      <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground text-sm">{p.driver_nama ?? "—"}</td>
                       <td className="py-3 px-4 text-center">
                         <Badge variant={statusConfig[p.status]?.variant ?? "outline"} className="text-xs">
                           {statusConfig[p.status]?.label ?? p.status}
@@ -226,7 +282,7 @@ export default function DistribusiPage() {
                 </tbody>
               </table>
               {filtered.length > 50 && (
-                <p className="text-xs text-muted-foreground text-center py-3 border-t">
+                <p className="text-xs text-muted-foreground text-center py-3 border-t bg-muted/10">
                   Menampilkan 50 dari {filtered.length} pengiriman
                 </p>
               )}
@@ -235,14 +291,20 @@ export default function DistribusiPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editing ? "Edit Pengiriman" : "Tambah Pengiriman"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label>Dapur</Label>
               <Select value={form.dapur_id} onValueChange={v => setForm(f => ({...f, dapur_id: v}))}>
                 <SelectTrigger><SelectValue placeholder="Pilih dapur" /></SelectTrigger>
-                <SelectContent>{(dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {(dapurList ?? []).length === 0 ? (
+                    <div className="py-4 text-center text-sm text-muted-foreground">Belum ada dapur</div>
+                  ) : (
+                    (dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)
+                  )}
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5"><Label>Tujuan / Sekolah</Label>
@@ -253,7 +315,7 @@ export default function DistribusiPage() {
                 <Input type="date" value={form.tanggal} onChange={e => setForm(f => ({...f, tanggal: e.target.value}))} />
               </div>
               <div className="space-y-1.5"><Label>Jumlah Porsi</Label>
-                <Input type="number" value={form.jumlah_porsi} onChange={e => setForm(f => ({...f, jumlah_porsi: e.target.value}))} placeholder="100" />
+                <Input type="number" value={form.jumlah_porsi} onChange={e => setForm(f => ({...f, jumlah_porsi: e.target.value}))} placeholder="100" min={1} />
               </div>
             </div>
             <div className="space-y-1.5"><Label>Driver <span className="text-muted-foreground text-xs">(opsional)</span></Label>
@@ -269,7 +331,13 @@ export default function DistribusiPage() {
               <div className="space-y-1.5"><Label>Status</Label>
                 <Select value={form.status} onValueChange={v => setForm(f => ({...f, status: v}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(statusConfig).map(([v, c]) => <SelectItem key={v} value={v}>{c.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {Object.entries(statusConfig).map(([v, c]) => (
+                      <SelectItem key={v} value={v}>
+                        <span className="flex items-center gap-2"><c.icon size={13} className={c.iconColor} />{c.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
             )}
@@ -285,7 +353,7 @@ export default function DistribusiPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.dapur_id || !form.tujuan}>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.dapur_id || !form.tujuan || !form.jumlah_porsi}>
               {save.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>

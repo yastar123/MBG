@@ -13,6 +13,7 @@ import {
   Activity,
   ArrowDownRight,
   RefreshCw,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,7 +54,7 @@ export default function Dashboard() {
       border: "border-emerald-100",
       accent: "from-emerald-50/60 to-transparent",
       trend: <ArrowUpRight size={14} className="text-emerald-500/50" />,
-      delay: "0.06s",
+      delay: "0.05s",
     },
     {
       title: "Pengiriman",
@@ -65,7 +66,19 @@ export default function Dashboard() {
       border: "border-sky-100",
       accent: "from-sky-50/60 to-transparent",
       trend: <ArrowUpRight size={14} className="text-sky-500/50" />,
-      delay: "0.12s",
+      delay: "0.10s",
+    },
+    {
+      title: "Penerima Manfaat",
+      value: summary?.total_penerima_manfaat,
+      icon: Users,
+      description: "Siswa aktif terdaftar",
+      iconBg: "bg-violet-100 text-violet-700",
+      valueClass: "text-foreground",
+      border: "border-violet-100",
+      accent: "from-violet-50/40 to-transparent",
+      trend: <ArrowUpRight size={14} className="text-violet-500/50" />,
+      delay: "0.15s",
     },
     {
       title: "Peringatan Stok",
@@ -80,13 +93,12 @@ export default function Dashboard() {
         ? <ArrowDownRight size={14} className="text-destructive/60" />
         : <ArrowUpRight size={14} className="text-muted-foreground/30" />,
       alert: (summary?.stok_alert_count ?? 0) > 0,
-      delay: "0.18s",
+      delay: "0.20s",
     },
   ];
 
   return (
     <div className="space-y-8">
-      {/* Page heading */}
       <div className="animate-fade-in flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
@@ -113,12 +125,12 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stat cards — 5 items: 2 on mobile, 3 on md, 5 on xl */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {stats.map((card) => (
           <Card
             key={card.title}
-            className={`shadow-sm card-hover animate-slide-up overflow-hidden border ${card.border}`}
+            className={`shadow-sm card-hover animate-slide-up overflow-hidden border ${card.border} ${card.title === "Peringatan Stok" ? "col-span-2 md:col-span-1" : ""}`}
             style={{ animationDelay: card.delay }}
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${card.accent} pointer-events-none`} />
@@ -138,9 +150,9 @@ export default function Dashboard() {
                     : '—'}
                 </div>
               )}
-              <p className="text-xs font-semibold text-foreground/75 mt-1">{card.title}</p>
+              <p className="text-xs font-semibold text-foreground/75 mt-1 leading-tight">{card.title}</p>
               {card.description && (
-                <p className="text-xs text-muted-foreground/60 mt-0.5 leading-relaxed truncate">{card.description}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-relaxed truncate">{card.description}</p>
               )}
             </CardContent>
           </Card>
@@ -148,7 +160,7 @@ export default function Dashboard() {
       </div>
 
       {/* Chart + summary grid */}
-      <div className="grid gap-5 lg:grid-cols-7 animate-slide-up" style={{ animationDelay: '0.22s' }}>
+      <div className="grid gap-5 lg:grid-cols-7 animate-slide-up" style={{ animationDelay: '0.25s' }}>
         {/* Area chart */}
         <Card className="lg:col-span-5 shadow-sm">
           <CardHeader className="pb-3">
@@ -242,7 +254,7 @@ export default function Dashboard() {
           <CardContent className="space-y-2.5">
             {isLoadingSummary ? (
               <div className="space-y-2.5">
-                {[1,2,3].map(i => <Skeleton key={i} className="h-[60px] w-full rounded-xl" />)}
+                {[1,2,3,4].map(i => <Skeleton key={i} className="h-[60px] w-full rounded-xl" />)}
               </div>
             ) : (
               <>
@@ -271,6 +283,14 @@ export default function Dashboard() {
                     iconBg: "bg-sky-100 text-sky-700",
                     valueClass: "text-sky-700",
                   },
+                  {
+                    icon: Users,
+                    label: "Penerima Manfaat",
+                    sub: "siswa aktif terdaftar",
+                    value: summary?.total_penerima_manfaat?.toLocaleString("id-ID") ?? "—",
+                    iconBg: "bg-violet-100 text-violet-700",
+                    valueClass: "text-violet-700",
+                  },
                 ].map((item, i) => (
                   <div
                     key={item.label}
@@ -289,13 +309,13 @@ export default function Dashboard() {
                 ))}
 
                 {(summary?.stok_alert_count ?? 0) > 0 && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20 animate-slide-up" style={{ animationDelay: '0.45s' }}>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20 animate-slide-up" style={{ animationDelay: '0.5s' }}>
                     <div className="w-9 h-9 rounded-lg bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
                       <AlertTriangle size={15} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-destructive leading-tight">Peringatan Stok</p>
-                      <p className="text-xs text-muted-foreground/65">Bahan hampir habis</p>
+                      <p className="text-xs text-muted-foreground/65">Bahan di bawah minimum</p>
                     </div>
                     <span className="font-bold text-lg text-destructive shrink-0 tabular-nums">{summary?.stok_alert_count}</span>
                   </div>
