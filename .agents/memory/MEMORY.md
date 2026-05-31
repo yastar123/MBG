@@ -2,3 +2,5 @@
 - [Express 5 Params Fix](express5-params-fix.md) — all req.params.id calls need `req.params["id"] as string` cast; bare req.params.id is string | string[] in Express 5 types.
 - [Recharts Array Guard](recharts-array-guard.md) — always use Array.isArray() before passing data to Recharts charts; truthy check with .length is not enough and causes displayedData.map crash.
 - [useGetMe Call](usegetme-call.md) — call useGetMe() with no arguments; passing { query: { retry: false } } causes TS error because TQ v5 requires queryKey when query options are passed.
+- [Gudang Stok Bug](gudang-stok-bug.md) — stok tab shows empty for all fresh bahan baku; fix requires POST /bahan-baku to also INSERT INTO stok with kuantitas=0; GET /stok backfills missing rows; PATCH /stok/:bahan_baku_id enables manual adjustment.
+- [CSS Utilities Pattern](css-utilities-pattern.md) — index.css uses @layer utilities for custom classes; Tailwind v4 theme tokens live in :root block; animation delays use inline style={{ animationDelay }} not Tailwind classes.

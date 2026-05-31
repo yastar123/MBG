@@ -18,6 +18,7 @@ import {
   Menu,
   ChevronRight,
   MoreHorizontal,
+  Bell,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearToken } from "@/lib/auth";
@@ -103,7 +104,7 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
     <>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5 px-1">
-          <div className="bg-sidebar-primary/25 text-sidebar-primary p-2 rounded-lg border border-sidebar-primary/30 shadow-sm">
+          <div className="bg-sidebar-primary/25 text-sidebar-primary-foreground p-2 rounded-lg border border-sidebar-primary/30 shadow-sm">
             <Utensils size={17} />
           </div>
           <div>
@@ -125,7 +126,12 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
                   const active = isActive(location, item.href);
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.name}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={item.name}
+                        className={active ? "nav-active-indicator" : ""}
+                      >
                         <Link
                           href={item.href}
                           onClick={onNavigate}
@@ -183,7 +189,7 @@ function MobileBottomNav({ location, onOpenMenu }: { location: string; onOpenMen
               <button
                 key="more"
                 onClick={onOpenMenu}
-                className="flex-1 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors active:scale-95"
+                className="flex-1 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors active:scale-95 min-w-[44px]"
               >
                 <item.icon size={20} strokeWidth={1.8} />
                 <span className="text-[10px] font-medium">{item.name}</span>
@@ -195,17 +201,14 @@ function MobileBottomNav({ location, onOpenMenu }: { location: string; onOpenMen
             <Link
               key={item.name}
               href={item.href}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors active:scale-95 ${
-                active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 min-w-[44px] relative ${
+                active ? 'text-primary bottom-nav-item-active' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <div className={`relative p-1.5 rounded-lg transition-all ${active ? 'bg-primary/10' : ''}`}>
+              <div className={`relative p-1.5 rounded-xl transition-all duration-200 ${active ? 'bg-primary/10' : ''}`}>
                 <item.icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-                {active && (
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-primary rounded-full" />
-                )}
               </div>
-              <span className={`text-[10px] font-medium leading-none ${active ? 'text-primary font-semibold' : ''}`}>
+              <span className={`text-[10px] leading-none ${active ? 'font-semibold text-primary' : 'font-medium'}`}>
                 {item.name}
               </span>
             </Link>
@@ -255,10 +258,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top header */}
-          <header className="h-14 border-b bg-card/95 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 sticky top-0 z-20 shadow-sm">
+          <header className="h-14 border-b bg-card/95 header-blur flex items-center px-4 gap-3 shrink-0 sticky top-0 z-20 shadow-[0_1px_3px_hsl(var(--foreground)/0.06)]">
             <button
               onClick={() => setMobileOpen(true)}
-              className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
+              className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Buka menu navigasi"
             >
               <Menu size={18} />
@@ -293,6 +296,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="hidden lg:inline">{dateStr}</span>
               <span className="lg:hidden">{now.toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
             </div>
+
+            {/* Notification bell */}
+            <button
+              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
+              title="Notifikasi"
+              aria-label="Notifikasi"
+            >
+              <Bell size={16} />
+            </button>
           </header>
 
           {/* Page content — extra pb on mobile for bottom nav */}

@@ -41,7 +41,6 @@ router.get("/dashboard/summary", authMiddleware, async (_req, res) => {
 
 router.get("/dashboard/trends", authMiddleware, async (_req, res) => {
   const produksiList = await db.select().from(produksiTable);
-  const menuList = await db.select().from(produksiTable);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -50,8 +49,9 @@ router.get("/dashboard/trends", authMiddleware, async (_req, res) => {
 
   const trends = days.map((tanggal) => {
     const dayProd = produksiList.filter((p) => p.tanggal === tanggal);
+    const short = new Date(tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
     return {
-      tanggal,
+      tanggal: short,
       total_porsi: dayProd.reduce((s, p) => s + (p.realisasi_porsi ?? 0), 0),
       target_porsi: dayProd.reduce((s, p) => s + p.target_porsi, 0),
     };

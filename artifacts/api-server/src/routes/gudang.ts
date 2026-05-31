@@ -21,6 +21,13 @@ router.post("/bahan-baku", authMiddleware, async (req, res) => {
     .insert(bahanBakuTable)
     .values({ nama, satuan, stok_minimum: String(stok_minimum), kategori })
     .returning();
+
+  // Auto-create stok record with kuantitas=0 so it appears in the stok tab immediately
+  await db
+    .insert(stokTable)
+    .values({ bahan_baku_id: b.id, kuantitas: "0" })
+    .onConflictDoNothing();
+
   res.status(201).json({ ...b, stok_minimum: parseFloat(b.stok_minimum) });
 });
 
@@ -38,6 +45,8 @@ router.patch("/bahan-baku/:id", authMiddleware, async (req, res) => {
 
 router.delete("/bahan-baku/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
+  // Also clean up stok record
+  await db.delete(stokTable).where(eq(stokTable.bahan_baku_id, id));
   await db.delete(bahanBakuTable).where(eq(bahanBakuTable.id, id));
   res.status(204).end();
 });
@@ -46,6 +55,28 @@ router.delete("/bahan-baku/:id", authMiddleware, async (req, res) => {
 router.get("/stok", authMiddleware, async (req, res) => {
   const stok = await db.select().from(stokTable);
   const bahan = await db.select().from(bahanBakuTable);
+
+  // Ensure every bahan_baku has a stok record (backfill for existing data)
+  const missingIds = bahan.filter(b => !stok.find(s => s.bahan_baku_id === b.id)).map(b => b.id);
+  if (missingIds.length > 0) {
+    for (const id of missingIds) {
+      await db.insert(stokTable).values({ bahan_baku_id: id, kuantitas: "0" }).onConflictDoNothing();
+    }
+    const updatedStok = await db.select().from(stokTable);
+    const result = updatedStok.map((s) => {
+      const b = bahan.find((x) => x.id === s.bahan_baku_id);
+      return {
+        ...s,
+        bahan_baku_nama: b?.nama ?? "Unknown",
+        satuan: b?.satuan ?? "",
+        stok_minimum: b ? parseFloat(b.stok_minimum) : 0,
+        kuantitas: parseFloat(s.kuantitas),
+      };
+    });
+    res.json(result);
+    return;
+  }
+
   const result = stok.map((s) => {
     const b = bahan.find((x) => x.id === s.bahan_baku_id);
     return {
@@ -57,6 +88,33 @@ router.get("/stok", authMiddleware, async (req, res) => {
     };
   });
   res.json(result);
+});
+
+// Update stok level directly (e.g., manual stock adjustment)
+router.patch("/stok/:bahan_baku_id", authMiddleware, async (req, res) => {
+  const bahan_baku_id = parseInt(req.params["bahan_baku_id"] as string);
+  const { kuantitas } = req.body;
+  if (kuantitas === undefined || kuantitas === null) {
+    res.status(400).json({ error: "Kuantitas wajib diisi" });
+    return;
+  }
+
+  // Upsert: update if exists, insert if not
+  const existing = await db.select().from(stokTable).where(eq(stokTable.bahan_baku_id, bahan_baku_id)).limit(1);
+  if (existing.length > 0) {
+    const [s] = await db
+      .update(stokTable)
+      .set({ kuantitas: String(kuantitas), updated_at: new Date() })
+      .where(eq(stokTable.bahan_baku_id, bahan_baku_id))
+      .returning();
+    res.json({ ...s, kuantitas: parseFloat(s.kuantitas) });
+  } else {
+    const [s] = await db
+      .insert(stokTable)
+      .values({ bahan_baku_id, kuantitas: String(kuantitas) })
+      .returning();
+    res.json({ ...s, kuantitas: parseFloat(s.kuantitas) });
+  }
 });
 
 router.get("/stok/alerts", authMiddleware, async (_req, res) => {
@@ -91,16 +149,18 @@ router.get("/penerimaan-bahan", authMiddleware, async (_req, res) => {
 });
 
 router.post("/penerimaan-bahan", authMiddleware, async (req, res) => {
-  const { supplier_id, tanggal, catatan } = req.body;
+  const { supplier_id, tanggal, catatan, status } = req.body;
   if (!supplier_id || !tanggal) {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
   const [p] = await db
     .insert(penerimaanBahanTable)
-    .values({ supplier_id: parseInt(supplier_id), tanggal, catatan })
+    .values({ supplier_id: parseInt(supplier_id), tanggal, catatan, status: status ?? "pending" })
     .returning();
-  res.status(201).json({ ...p, supplier_nama: null });
+
+  const supplier = await db.select().from(supplierTable).where(eq(supplierTable.id, parseInt(supplier_id))).limit(1);
+  res.status(201).json({ ...p, supplier_nama: supplier[0]?.nama ?? null });
 });
 
 // PENGELUARAN BAHAN
@@ -123,7 +183,9 @@ router.post("/pengeluaran-bahan", authMiddleware, async (req, res) => {
     .insert(pengeluaranBahanTable)
     .values({ dapur_id: parseInt(dapur_id), tanggal, catatan })
     .returning();
-  res.status(201).json({ ...p, dapur_nama: null });
+
+  const dapur = await db.select().from(dapurTable).where(eq(dapurTable.id, parseInt(dapur_id))).limit(1);
+  res.status(201).json({ ...p, dapur_nama: dapur[0]?.nama ?? null });
 });
 
 export default router;
