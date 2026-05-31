@@ -17,6 +17,7 @@ import {
   Calendar,
   Menu,
   ChevronRight,
+  MoreHorizontal,
 } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearToken } from "@/lib/auth";
@@ -66,6 +67,15 @@ const navGroups = [
   },
 ];
 
+// Bottom nav items for mobile (5 most-used)
+const bottomNavItems = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Produksi", href: "/produksi", icon: Utensils },
+  { name: "Gudang", href: "/gudang", icon: PackageSearch },
+  { name: "Distribusi", href: "/distribusi", icon: Truck },
+  { name: "Lainnya", href: null, icon: MoreHorizontal },
+];
+
 function useDatetime() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -76,12 +86,8 @@ function useDatetime() {
 }
 
 function isActive(location: string, href: string): boolean {
-  if (href === "/gudang") {
-    return location === "/gudang" || location.startsWith("/gudang/");
-  }
-  if (href === "/keuangan") {
-    return location === "/keuangan" || location.startsWith("/keuangan/");
-  }
+  if (href === "/gudang") return location === "/gudang" || location.startsWith("/gudang/");
+  if (href === "/keuangan") return location === "/keuangan" || location.startsWith("/keuangan/");
   return location === href || location.startsWith(href + "/");
 }
 
@@ -167,6 +173,49 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
   );
 }
 
+function MobileBottomNav({ location, onOpenMenu }: { location: string; onOpenMenu: () => void }) {
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-md border-t border-border/60 shadow-lg safe-bottom">
+      <div className="flex items-stretch h-16">
+        {bottomNavItems.map((item) => {
+          if (item.href === null) {
+            return (
+              <button
+                key="more"
+                onClick={onOpenMenu}
+                className="flex-1 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors active:scale-95"
+              >
+                <item.icon size={20} strokeWidth={1.8} />
+                <span className="text-[10px] font-medium">{item.name}</span>
+              </button>
+            );
+          }
+          const active = isActive(location, item.href);
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors active:scale-95 ${
+                active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className={`relative p-1.5 rounded-lg transition-all ${active ? 'bg-primary/10' : ''}`}>
+                <item.icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+                {active && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-primary rounded-full" />
+                )}
+              </div>
+              <span className={`text-[10px] font-medium leading-none ${active ? 'text-primary font-semibold' : ''}`}>
+                {item.name}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -185,16 +234,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
+        {/* Desktop sidebar */}
         <div className="hidden md:flex">
           <Sidebar className="border-r border-sidebar-border shadow-sm">
             <SidebarInner location={location} />
           </Sidebar>
         </div>
 
+        {/* Mobile drawer */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            className="p-0 w-64 bg-sidebar border-r border-sidebar-border [&>button]:hidden"
+            className="p-0 w-72 bg-sidebar border-r border-sidebar-border [&>button]:hidden"
           >
             <div className="flex flex-col h-full">
               <SidebarInner location={location} onNavigate={() => setMobileOpen(false)} />
@@ -203,8 +254,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Sheet>
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Top header */}
           <header className="h-14 border-b bg-card/95 backdrop-blur-sm flex items-center px-4 gap-3 shrink-0 sticky top-0 z-20 shadow-sm">
-            {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(true)}
               className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
@@ -231,7 +282,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </>
                 )}
               </div>
-              {/* Mobile: current page name */}
               <div className="md:hidden font-bold text-sm text-foreground truncate">
                 {activeItem?.name ?? "MBG Dapur"}
               </div>
@@ -245,12 +295,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+          {/* Page content — extra pb on mobile for bottom nav */}
+          <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
             <div className="mx-auto max-w-6xl animate-slide-up">
               {children}
             </div>
           </div>
         </main>
+
+        {/* Mobile bottom nav */}
+        <MobileBottomNav location={location} onOpenMenu={() => setMobileOpen(true)} />
       </div>
     </SidebarProvider>
   );
