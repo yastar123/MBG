@@ -15,7 +15,7 @@ type PenerimaManfaat = { id: number; nama: string; sekolah: string; kelas: strin
 type Summary = { wilayah: string; total_penerima: number; hadir_hari_ini: number; persen_jangkauan: number };
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
-const emptyForm = { nama: "", sekolah: "", kelas: "", wilayah: "" };
+const emptyForm = { nama: "", sekolah: "", kelas: "", wilayah: "", is_aktif: true };
 
 export default function PenerimaManfaatPage() {
   const qc = useQueryClient();
@@ -52,7 +52,7 @@ export default function PenerimaManfaatPage() {
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
   function openEdit(p: PenerimaManfaat) {
     setEditing(p);
-    setForm({ nama: p.nama, sekolah: p.sekolah, kelas: p.kelas, wilayah: p.wilayah });
+    setForm({ nama: p.nama, sekolah: p.sekolah, kelas: p.kelas, wilayah: p.wilayah, is_aktif: p.is_aktif });
     setOpen(true);
   }
 
@@ -214,6 +214,23 @@ export default function PenerimaManfaatPage() {
                 <Input value={form.wilayah} onChange={e => setForm(f => ({...f, wilayah: e.target.value}))} placeholder="Jakarta Selatan" />
               </div>
             </div>
+            {editing && (
+              <div className="flex items-center justify-between rounded-lg border px-4 py-3 bg-muted/30">
+                <div>
+                  <p className="text-sm font-medium">Status Aktif</p>
+                  <p className="text-xs text-muted-foreground">Penerima dapat menerima MBG</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.is_aktif}
+                  onClick={() => setForm(f => ({ ...f, is_aktif: !f.is_aktif }))}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${form.is_aktif ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform ${form.is_aktif ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight } from "lucide-react";
+import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };
@@ -44,6 +44,8 @@ export default function PenggunaPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [delId, setDelId] = useState<number | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const toggleActive = useMutation({
     mutationFn: async (u: User) => {
@@ -62,26 +64,41 @@ export default function PenggunaPage() {
     onError: () => toast({ title: "Gagal mengubah status", variant: "destructive" }),
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/users"] }); toast({ title: "Pengguna dihapus" }); setDelId(null); },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
+  });
+
   const save = useMutation({
     mutationFn: async () => {
       const url = editing ? `/api/users/${editing.id}` : "/api/users";
       const method = editing ? "PATCH" : "POST";
-      const payload: Record<string, unknown> = { ...form };
+      const payload: Record<string, unknown> = { nama: form.nama, email: form.email, role: form.role, no_hp: form.no_hp || null };
       if (form.dapur_id) payload.dapur_id = parseInt(form.dapur_id);
       else payload.dapur_id = null;
-      if (!editing) payload.password = form.password;
+      if (!editing || (showChangePassword && form.password)) payload.password = form.password;
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error();
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/users"] }); toast({ title: editing ? "Pengguna diperbarui" : "Pengguna ditambahkan" }); setOpen(false); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: editing ? "Pengguna diperbarui" : "Pengguna ditambahkan" });
+      setOpen(false);
+      setShowChangePassword(false);
+    },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
 
-  function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
+  function openAdd() { setEditing(null); setForm(emptyForm); setShowChangePassword(false); setOpen(true); }
   function openEdit(u: User) {
     setEditing(u);
     setForm({ nama: u.nama, email: u.email, password: "", role: u.role, dapur_id: u.dapur_id?.toString() ?? "", no_hp: u.no_hp ?? "" });
+    setShowChangePassword(false);
     setOpen(true);
   }
 
@@ -216,8 +233,11 @@ export default function PenggunaPage() {
                           >
                             {u.is_active ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(u)}>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(u)} title="Edit">
                             <Pencil size={13} />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(u.id)} title="Hapus">
+                            <Trash2 size={13} />
                           </Button>
                         </div>
                       </td>
@@ -230,7 +250,22 @@ export default function PenggunaPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={delId !== null} onOpenChange={() => setDelId(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Hapus Pengguna</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus pengguna <span className="font-semibold text-foreground">{(data ?? []).find(u => u.id === delId)?.nama}</span>? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={() => delId && deleteUser.mutate(delId)} disabled={deleteUser.isPending}>
+              {deleteUser.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) setShowChangePassword(false); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -245,10 +280,24 @@ export default function PenggunaPage() {
             <div className="space-y-1.5"><Label>Email</Label>
               <Input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="budi@mbg.id" />
             </div>
-            {!editing && (
+            {!editing ? (
               <div className="space-y-1.5">
                 <Label>Password</Label>
                 <Input type="password" value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))} placeholder="Minimal 6 karakter" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowChangePassword(v => !v); setForm(f => ({ ...f, password: "" })); }}
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <KeyRound size={14} />
+                  {showChangePassword ? "Batal ganti password" : "Ganti password"}
+                </button>
+                {showChangePassword && (
+                  <Input type="password" value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))} placeholder="Password baru (min. 6 karakter)" />
+                )}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -274,7 +323,7 @@ export default function PenggunaPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password)}>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password) || (!!editing && showChangePassword && !form.password)}>
               {save.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>

@@ -25,8 +25,8 @@ const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3
 
 function fmt(n: number) { return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n); }
 
-const emptyAnggaranForm = { dapur_id: "", periode: new Date().toISOString().slice(0, 7), total_anggaran: "", anggaran_per_porsi: "" };
-const emptyRealisasiForm = { dapur_id: "", tanggal: new Date().toISOString().slice(0, 10), kategori: "bahan_baku", jumlah: "", deskripsi: "" };
+const getEmptyAnggaranForm = () => ({ dapur_id: "", periode: new Date().toISOString().slice(0, 7), total_anggaran: "", anggaran_per_porsi: "" });
+const getEmptyRealisasiForm = () => ({ dapur_id: "", tanggal: new Date().toISOString().slice(0, 10), kategori: "bahan_baku", jumlah: "", deskripsi: "" });
 
 export default function KeuanganPage() {
   const qc = useQueryClient();
@@ -39,13 +39,13 @@ export default function KeuanganPage() {
   // Anggaran dialog state
   const [openAnggaran, setOpenAnggaran] = useState(false);
   const [editAnggaran, setEditAnggaran] = useState<Anggaran | null>(null);
-  const [formAnggaran, setFormAnggaran] = useState(emptyAnggaranForm);
+  const [formAnggaran, setFormAnggaran] = useState(getEmptyAnggaranForm);
   const [delAnggaranId, setDelAnggaranId] = useState<number | null>(null);
 
   // Realisasi dialog state
   const [openRealisasi, setOpenRealisasi] = useState(false);
   const [editRealisasi, setEditRealisasi] = useState<Realisasi | null>(null);
-  const [formRealisasi, setFormRealisasi] = useState(emptyRealisasiForm);
+  const [formRealisasi, setFormRealisasi] = useState(getEmptyRealisasiForm);
   const [delRealisasiId, setDelRealisasiId] = useState<number | null>(null);
 
   const saveAnggaran = useMutation({
@@ -62,7 +62,7 @@ export default function KeuanganPage() {
       toast({ title: editAnggaran ? "Anggaran diperbarui" : "Anggaran ditambahkan" });
       setOpenAnggaran(false);
       setEditAnggaran(null);
-      setFormAnggaran(emptyAnggaranForm);
+      setFormAnggaran(getEmptyAnggaranForm());
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
@@ -95,7 +95,7 @@ export default function KeuanganPage() {
       toast({ title: editRealisasi ? "Realisasi diperbarui" : "Realisasi dicatat" });
       setOpenRealisasi(false);
       setEditRealisasi(null);
-      setFormRealisasi(emptyRealisasiForm);
+      setFormRealisasi(getEmptyRealisasiForm());
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
@@ -232,7 +232,7 @@ export default function KeuanganPage() {
                     <Badge variant="secondary" className="text-xs ml-1">{realisasi.length}</Badge>
                   )}
                 </CardTitle>
-                <Button size="sm" onClick={() => { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }} className="gap-1.5">
+                <Button size="sm" onClick={() => { setEditRealisasi(null); setFormRealisasi(getEmptyRealisasiForm()); setOpenRealisasi(true); }} className="gap-1.5">
                   <Plus size={14} /> Catat
                 </Button>
               </div>
@@ -245,7 +245,7 @@ export default function KeuanganPage() {
                     <p className="text-sm font-semibold text-foreground/70">Belum ada catatan realisasi</p>
                     <p className="text-xs text-muted-foreground/60 mt-0.5">Catat pengeluaran untuk mulai monitoring</p>
                   </div>
-                  <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); setOpenRealisasi(true); }}>
+                  <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setEditRealisasi(null); setFormRealisasi(getEmptyRealisasiForm()); setOpenRealisasi(true); }}>
                     <Plus size={14} />Catat Realisasi
                   </Button>
                 </div>
@@ -310,7 +310,7 @@ export default function KeuanganPage() {
                     <Badge variant="secondary" className="text-xs ml-1">{anggaran.length}</Badge>
                   )}
                 </CardTitle>
-                <Button size="sm" onClick={() => { setEditAnggaran(null); setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }} className="gap-1.5">
+                <Button size="sm" onClick={() => { setEditAnggaran(null); setFormAnggaran(getEmptyAnggaranForm()); setOpenAnggaran(true); }} className="gap-1.5">
                   <Plus size={14} /> Tambah
                 </Button>
               </div>
@@ -323,7 +323,7 @@ export default function KeuanganPage() {
                     <p className="text-sm font-semibold text-foreground/70">Belum ada anggaran yang dibuat</p>
                     <p className="text-xs text-muted-foreground/60 mt-0.5">Buat anggaran per dapur per periode</p>
                   </div>
-                  <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setEditAnggaran(null); setFormAnggaran(emptyAnggaranForm); setOpenAnggaran(true); }}>
+                  <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setEditAnggaran(null); setFormAnggaran(getEmptyAnggaranForm()); setOpenAnggaran(true); }}>
                     <Plus size={14} />Tambah Anggaran
                   </Button>
                 </div>
@@ -374,7 +374,7 @@ export default function KeuanganPage() {
       </Tabs>
 
       {/* Dialog: Tambah / Edit Anggaran */}
-      <Dialog open={openAnggaran} onOpenChange={v => { setOpenAnggaran(v); if (!v) { setEditAnggaran(null); setFormAnggaran(emptyAnggaranForm); } }}>
+      <Dialog open={openAnggaran} onOpenChange={v => { setOpenAnggaran(v); if (!v) { setEditAnggaran(null); setFormAnggaran(getEmptyAnggaranForm()); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editAnggaran ? "Edit Anggaran" : "Tambah Anggaran"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
@@ -426,7 +426,7 @@ export default function KeuanganPage() {
       </Dialog>
 
       {/* Dialog: Tambah / Edit Realisasi */}
-      <Dialog open={openRealisasi} onOpenChange={v => { setOpenRealisasi(v); if (!v) { setEditRealisasi(null); setFormRealisasi(emptyRealisasiForm); } }}>
+      <Dialog open={openRealisasi} onOpenChange={v => { setOpenRealisasi(v); if (!v) { setEditRealisasi(null); setFormRealisasi(getEmptyRealisasiForm()); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editRealisasi ? "Edit Realisasi" : "Catat Realisasi Pengeluaran"}</DialogTitle>

@@ -21,8 +21,7 @@ type Produksi = {
 type Dapur = { id: number; nama: string };
 type Menu = { id: number; nama: string; tanggal: string };
 
-const today = new Date().toISOString().slice(0, 10);
-const emptyAddForm = { dapur_id: "", menu_id: "", tanggal: today, target_porsi: "" };
+const getEmptyAddForm = () => ({ dapur_id: "", menu_id: "", tanggal: new Date().toISOString().slice(0, 10), target_porsi: "" });
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dotColor: string }> = {
   dijadwalkan:  { label: "Dijadwalkan",  variant: "outline",     dotColor: "bg-muted-foreground/50" },
@@ -41,8 +40,9 @@ export default function ProduksiPage() {
   const { data: menuList } = useQuery<Menu[]>({ queryKey: ["/api/menu"], queryFn: async () => (await fetch("/api/menu")).json() });
   const [editItem, setEditItem] = useState<Produksi | null>(null);
   const [editForm, setEditForm] = useState({ realisasi_porsi: "", status: "", catatan_qc: "" });
+  const today = new Date().toISOString().slice(0, 10);
   const [openAdd, setOpenAdd] = useState(false);
-  const [addForm, setAddForm] = useState(emptyAddForm);
+  const [addForm, setAddForm] = useState(getEmptyAddForm);
   const [search, setSearch] = useState("");
   const [filterTanggal, setFilterTanggal] = useState(today);
   const [showAllDates, setShowAllDates] = useState(false);
@@ -58,7 +58,7 @@ export default function ProduksiPage() {
       qcClient.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
       toast({ title: "Produksi dijadwalkan" });
       setOpenAdd(false);
-      setAddForm(emptyAddForm);
+      setAddForm(getEmptyAddForm());
     },
     onError: (e: Error) => toast({ title: "Gagal", description: e.message, variant: "destructive" }),
   });
@@ -108,7 +108,7 @@ export default function ProduksiPage() {
           <h1 className="page-heading">Produksi</h1>
           <p className="page-subheading">Monitor dan catat realisasi produksi harian</p>
         </div>
-        <Button onClick={() => { setAddForm(emptyAddForm); setOpenAdd(true); }} className="gap-2 shrink-0">
+        <Button onClick={() => { setAddForm(getEmptyAddForm()); setOpenAdd(true); }} className="gap-2 shrink-0">
           <Plus size={16} /> Jadwalkan Produksi
         </Button>
       </div>
@@ -227,7 +227,7 @@ export default function ProduksiPage() {
                   <p className="text-sm font-semibold text-foreground/70">Belum ada data produksi</p>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">Jadwalkan produksi untuk mulai mencatat</p>
                 </div>
-                <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setAddForm(emptyAddForm); setOpenAdd(true); }}>
+                <Button size="sm" className="gap-1.5 mt-1" onClick={() => { setAddForm(getEmptyAddForm()); setOpenAdd(true); }}>
                   <Plus size={13} /> Jadwalkan Produksi
                 </Button>
               </div>

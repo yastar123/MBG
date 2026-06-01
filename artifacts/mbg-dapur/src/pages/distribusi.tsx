@@ -28,7 +28,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; ico
   gagal:       { label: "Gagal",       icon: XCircle,      iconBg: "bg-destructive/10", iconColor: "text-destructive",      variant: "destructive" },
 };
 
-const emptyForm = { dapur_id: "", driver_id: "", tanggal: new Date().toISOString().slice(0, 10), jumlah_porsi: "", tujuan: "", catatan: "", status: "dijadwalkan" };
+const getEmptyForm = () => ({ dapur_id: "", driver_id: "", tanggal: new Date().toISOString().slice(0, 10), jumlah_porsi: "", tujuan: "", catatan: "", status: "dijadwalkan" });
 
 export default function DistribusiPage() {
   const qc = useQueryClient();
@@ -40,7 +40,7 @@ export default function DistribusiPage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Pengiriman | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(getEmptyForm);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -61,12 +61,12 @@ export default function DistribusiPage() {
       toast({ title: editing ? "Pengiriman diperbarui" : "Pengiriman ditambahkan" });
       setOpen(false);
       setEditing(null);
-      setForm(emptyForm);
+      setForm(getEmptyForm());
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
 
-  function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
+  function openAdd() { setEditing(null); setForm(getEmptyForm()); setOpen(true); }
   function openEdit(p: Pengiriman) {
     setEditing(p);
     setForm({ dapur_id: String(p.dapur_id), driver_id: p.driver_id?.toString() ?? "", tanggal: p.tanggal, jumlah_porsi: String(p.jumlah_porsi), tujuan: p.tujuan, catatan: p.catatan ?? "", status: p.status });
@@ -291,7 +291,7 @@ export default function DistribusiPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditing(null); setForm(getEmptyForm()); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editing ? "Edit Pengiriman" : "Tambah Pengiriman"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">

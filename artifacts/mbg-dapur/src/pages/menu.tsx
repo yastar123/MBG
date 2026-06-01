@@ -20,7 +20,7 @@ const kategoriColor: Record<string, string> = {
   makan_siang: "bg-blue-100 text-blue-700 border-blue-200",
   snack: "bg-green-100 text-green-700 border-green-200",
 };
-const emptyForm = { nama: "", deskripsi: "", tanggal: new Date().toISOString().slice(0, 10), kategori: "makan_siang", target_porsi: "", kalori: "" };
+const getEmptyForm = () => ({ nama: "", deskripsi: "", tanggal: new Date().toISOString().slice(0, 10), kategori: "makan_siang", target_porsi: "", kalori: "" });
 
 export default function MenuPage() {
   const qc = useQueryClient();
@@ -29,7 +29,7 @@ export default function MenuPage() {
   const { data, isLoading } = useQuery<Menu[]>({ queryKey: ["/api/menu"], queryFn: async () => (await fetch("/api/menu")).json() });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Menu | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(getEmptyForm);
   const [delId, setDelId] = useState<number | null>(null);
 
   const save = useMutation({
@@ -53,7 +53,7 @@ export default function MenuPage() {
     onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
-  function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
+  function openAdd() { setEditing(null); setForm(getEmptyForm()); setOpen(true); }
   function openEdit(m: Menu) {
     setEditing(m);
     setForm({ nama: m.nama, deskripsi: m.deskripsi ?? "", tanggal: m.tanggal, kategori: m.kategori, target_porsi: String(m.target_porsi), kalori: m.kalori?.toString() ?? "" });

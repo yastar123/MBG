@@ -20,7 +20,7 @@ type Penerimaan = { id: number; supplier_id: number; tanggal: string; total_item
 type Supplier = { id: number; nama: string };
 
 const emptyBahan = { nama: "", satuan: "", stok_minimum: "", kategori: "" };
-const emptyPenerimaan = { supplier_id: "", tanggal: new Date().toISOString().slice(0, 10), catatan: "", status: "pending" };
+const getEmptyPenerimaan = () => ({ supplier_id: "", tanggal: new Date().toISOString().slice(0, 10), catatan: "", status: "pending" });
 
 export default function GudangPage() {
   const qc = useQueryClient();
@@ -36,7 +36,7 @@ export default function GudangPage() {
   const [delBahanId, setDelBahanId] = useState<number | null>(null);
 
   const [openPenerimaan, setOpenPenerimaan] = useState(false);
-  const [formPenerimaan, setFormPenerimaan] = useState(emptyPenerimaan);
+  const [formPenerimaan, setFormPenerimaan] = useState(getEmptyPenerimaan);
 
   // Stok update dialog
   const [openStokUpdate, setOpenStokUpdate] = useState(false);
@@ -89,7 +89,7 @@ export default function GudangPage() {
       qc.invalidateQueries({ queryKey: ["/api/stok"] });
       toast({ title: "Penerimaan bahan berhasil dicatat" });
       setOpenPenerimaan(false);
-      setFormPenerimaan(emptyPenerimaan);
+      setFormPenerimaan(getEmptyPenerimaan());
     },
     onError: () => toast({ title: "Gagal mencatat penerimaan", variant: "destructive" }),
   });
@@ -381,7 +381,7 @@ export default function GudangPage() {
                   <ClipboardList size={16} className="text-primary" />
                   Riwayat Penerimaan Bahan
                 </CardTitle>
-                <Button size="sm" onClick={() => { setFormPenerimaan(emptyPenerimaan); setOpenPenerimaan(true); }} className="gap-1.5">
+                <Button size="sm" onClick={() => { setFormPenerimaan(getEmptyPenerimaan()); setOpenPenerimaan(true); }} className="gap-1.5">
                   <Plus size={14} /> Catat Penerimaan
                 </Button>
               </div>
@@ -400,7 +400,7 @@ export default function GudangPage() {
                     <p className="text-sm font-semibold text-foreground/70">Belum ada riwayat penerimaan</p>
                     <p className="text-xs text-muted-foreground/60 mt-0.5">Catat setiap penerimaan bahan dari supplier</p>
                   </div>
-                  <Button size="sm" onClick={() => { setFormPenerimaan(emptyPenerimaan); setOpenPenerimaan(true); }} className="gap-1.5 mt-1">
+                  <Button size="sm" onClick={() => { setFormPenerimaan(getEmptyPenerimaan()); setOpenPenerimaan(true); }} className="gap-1.5 mt-1">
                     <Plus size={14} /> Catat Penerimaan
                   </Button>
                 </div>

@@ -23,7 +23,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; col
   sakit:       { label: "Sakit",       icon: Clock,       color: "text-blue-600",    bg: "bg-blue-100" },
 };
 
-const emptyForm = { dapur_id: "", user_id: "", tanggal: new Date().toISOString().slice(0, 10), status: "hadir", keterangan: "" };
+const getEmptyForm = () => ({ dapur_id: "", user_id: "", tanggal: new Date().toISOString().slice(0, 10), status: "hadir", keterangan: "" });
 
 export default function AbsensiPage() {
   const qc = useQueryClient();
@@ -40,7 +40,7 @@ export default function AbsensiPage() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Absensi | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(getEmptyForm);
   const [delId, setDelId] = useState<number | null>(null);
 
   const save = useMutation({
@@ -56,7 +56,7 @@ export default function AbsensiPage() {
       toast({ title: editing ? "Absensi diperbarui" : "Absensi dicatat" });
       setOpen(false);
       setEditing(null);
-      setForm(emptyForm);
+      setForm(getEmptyForm());
     },
     onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
   });
@@ -74,7 +74,7 @@ export default function AbsensiPage() {
     onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
   });
 
-  function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
+  function openAdd() { setEditing(null); setForm(getEmptyForm()); setOpen(true); }
   function openEdit(a: Absensi) {
     setEditing(a);
     setForm({ dapur_id: String(a.dapur_id), user_id: String(a.user_id), tanggal: a.tanggal, status: a.status, keterangan: a.keterangan ?? "" });
@@ -257,7 +257,7 @@ export default function AbsensiPage() {
       )}
 
       {/* Dialog: Catat / Edit Absensi */}
-      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditing(null); setForm(getEmptyForm()); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editing ? "Edit Absensi" : "Catat Absensi"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
