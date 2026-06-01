@@ -60,6 +60,14 @@ export default function MenuPage() {
     setOpen(true);
   }
 
+  function formatTanggal(iso: string) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (iso === todayStr) return "Hari ini";
+    if (iso === yesterdayStr) return "Kemarin";
+    return new Date(iso + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const todayMenu = (data ?? []).filter(m => m.tanggal === today);
   const allMenu = (data ?? []).filter(m =>
@@ -161,8 +169,13 @@ export default function MenuPage() {
                   </thead>
                   <tbody>
                     {allMenu.map(m => (
-                      <tr key={m.id} className={`border-b hover:bg-muted/30 transition-colors ${m.tanggal === today ? 'bg-primary/3' : ''}`}>
-                        <td className="py-3 px-4 text-muted-foreground text-xs">{m.tanggal}</td>
+                      <tr key={m.id} className={`border-b hover:bg-muted/30 transition-colors ${m.tanggal === today ? 'bg-primary/[0.03]' : ''}`}>
+                        <td className="py-3 px-4 text-xs whitespace-nowrap">
+                          {m.tanggal === today
+                            ? <span className="text-primary font-semibold">Hari ini</span>
+                            : <span className="text-muted-foreground">{formatTanggal(m.tanggal)}</span>
+                          }
+                        </td>
                         <td className="py-3 px-4 font-medium">
                           <div>{m.nama}</div>
                           {m.deskripsi && <div className="text-xs text-muted-foreground truncate max-w-[180px] mt-0.5">{m.deskripsi}</div>}

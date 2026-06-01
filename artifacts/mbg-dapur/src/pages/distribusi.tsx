@@ -43,6 +43,7 @@ export default function DistribusiPage() {
   const [form, setForm] = useState(getEmptyForm);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [showAllRows, setShowAllRows] = useState(false);
 
   const drivers = userList?.filter(u => u.role === "driver") ?? [];
 
@@ -50,7 +51,8 @@ export default function DistribusiPage() {
     mutationFn: async () => {
       const url = editing ? `/api/pengiriman/${editing.id}` : "/api/pengiriman";
       const method = editing ? "PATCH" : "POST";
-      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const payload = { ...form, driver_id: form.driver_id ? form.driver_id : null };
+      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error();
       return r.json();
     },
@@ -260,9 +262,14 @@ export default function DistribusiPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.slice(0, 50).map(p => (
+                  {(showAllRows ? filtered : filtered.slice(0, 50)).map(p => (
                     <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${p.tanggal === today ? 'bg-primary/[0.02]' : ''}`}>
-                      <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{p.tanggal}</td>
+                      <td className="py-3 px-4 text-xs whitespace-nowrap">
+                        {p.tanggal === today
+                          ? <span className="text-primary font-semibold">Hari ini</span>
+                          : <span className="text-muted-foreground">{new Date(p.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
+                        }
+                      </td>
                       <td className="py-3 px-4 font-medium">{p.tujuan}</td>
                       <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{p.dapur_nama}</td>
                       <td className="py-3 px-4 text-right hidden md:table-cell tabular-nums">{p.jumlah_porsi.toLocaleString("id-ID")}</td>
@@ -281,10 +288,21 @@ export default function DistribusiPage() {
                   ))}
                 </tbody>
               </table>
-              {filtered.length > 50 && (
-                <p className="text-xs text-muted-foreground text-center py-3 border-t bg-muted/10">
-                  Menampilkan 50 dari {filtered.length} pengiriman
-                </p>
+              {!showAllRows && filtered.length > 50 && (
+                <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
+                  <span className="text-xs text-muted-foreground">Menampilkan 50 dari {filtered.length} pengiriman</span>
+                  <button onClick={() => setShowAllRows(true)} className="text-xs text-primary font-semibold hover:underline">
+                    Tampilkan semua →
+                  </button>
+                </div>
+              )}
+              {showAllRows && filtered.length > 50 && (
+                <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
+                  <span className="text-xs text-muted-foreground">{filtered.length} pengiriman ditampilkan</span>
+                  <button onClick={() => setShowAllRows(false)} className="text-xs text-muted-foreground font-medium hover:text-foreground transition-colors">
+                    Tampilkan lebih sedikit
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -319,10 +337,10 @@ export default function DistribusiPage() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>Driver <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Select value={form.driver_id} onValueChange={v => setForm(f => ({...f, driver_id: v}))}>
+              <Select value={form.driver_id || "none"} onValueChange={v => setForm(f => ({...f, driver_id: v === "none" ? "" : v}))}>
                 <SelectTrigger><SelectValue placeholder="Belum ditentukan" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Belum ditentukan</SelectItem>
+                  <SelectItem value="none">Belum ditentukan</SelectItem>
                   {drivers.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}
                 </SelectContent>
               </Select>

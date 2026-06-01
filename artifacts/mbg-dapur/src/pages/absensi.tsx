@@ -42,6 +42,7 @@ export default function AbsensiPage() {
   const [editing, setEditing] = useState<Absensi | null>(null);
   const [form, setForm] = useState(getEmptyForm);
   const [delId, setDelId] = useState<number | null>(null);
+  const [showAllRows, setShowAllRows] = useState(false);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -215,12 +216,17 @@ export default function AbsensiPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.slice(0, 50).map(a => {
+                    {(showAllRows ? filtered : filtered.slice(0, 50)).map(a => {
                       const cfg = statusConfig[a.status];
                       const Icon = cfg?.icon ?? CheckCircle;
                       return (
                         <tr key={a.id} className={`border-b hover:bg-muted/30 transition-colors ${a.tanggal === today ? 'bg-primary/[0.02]' : ''}`}>
-                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{a.tanggal}</td>
+                          <td className="py-3 px-4 text-xs whitespace-nowrap">
+                            {a.tanggal === today
+                              ? <span className="text-primary font-semibold">Hari ini</span>
+                              : <span className="text-muted-foreground">{new Date(a.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                            }
+                          </td>
                           <td className="py-3 px-4 font-medium">{a.user_nama}</td>
                           <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{a.dapur_nama}</td>
                           <td className="py-3 px-4 text-center">
@@ -245,9 +251,26 @@ export default function AbsensiPage() {
                     })}
                   </tbody>
                 </table>
-                {filtered.length > 50 && (
-                  <div className="px-4 py-3 text-xs text-center text-muted-foreground border-t bg-muted/10">
-                    Menampilkan 50 dari {filtered.length} data
+                {!showAllRows && filtered.length > 50 && (
+                  <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
+                    <span className="text-xs text-muted-foreground">Menampilkan 50 dari {filtered.length} data</span>
+                    <button
+                      onClick={() => setShowAllRows(true)}
+                      className="text-xs text-primary font-semibold hover:underline"
+                    >
+                      Tampilkan semua →
+                    </button>
+                  </div>
+                )}
+                {showAllRows && filtered.length > 50 && (
+                  <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
+                    <span className="text-xs text-muted-foreground">{filtered.length} data ditampilkan</span>
+                    <button
+                      onClick={() => setShowAllRows(false)}
+                      className="text-xs text-muted-foreground font-medium hover:text-foreground transition-colors"
+                    >
+                      Tampilkan lebih sedikit
+                    </button>
                   </div>
                 )}
               </div>

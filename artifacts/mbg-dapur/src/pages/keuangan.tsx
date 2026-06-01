@@ -265,7 +265,7 @@ export default function KeuanganPage() {
                     <tbody>
                       {(realisasi ?? []).map(r => (
                         <tr key={r.id} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{r.tanggal}</td>
+                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{new Date(r.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</td>
                           <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{r.dapur_nama}</td>
                           <td className="py-3 px-4">
                             <Badge variant="outline" className="text-xs">{kategoriLabel[r.kategori] ?? r.kategori}</Badge>

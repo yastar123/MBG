@@ -260,7 +260,12 @@ export default function ProduksiPage() {
                         : null;
                       return (
                         <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${p.tanggal === today ? 'bg-primary/[0.02]' : ''}`}>
-                          <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">{p.tanggal}</td>
+                          <td className="py-3 px-4 text-xs whitespace-nowrap">
+                            {p.tanggal === today
+                              ? <span className="text-primary font-semibold">Hari ini</span>
+                              : <span className="text-muted-foreground">{new Date(p.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
+                            }
+                          </td>
                           <td className="py-3 px-4 hidden sm:table-cell font-medium">{p.dapur_nama}</td>
                           <td className="py-3 px-4 max-w-[140px] truncate hidden md:table-cell text-sm text-muted-foreground">{p.menu_nama}</td>
                           <td className="py-3 px-4 text-right font-medium tabular-nums">{p.target_porsi.toLocaleString("id-ID")}</td>
@@ -291,8 +296,8 @@ export default function ProduksiPage() {
                   </tbody>
                 </table>
                 {filtered.length > 50 && (
-                  <div className="px-4 py-3 text-xs text-center text-muted-foreground border-t bg-muted/10">
-                    Menampilkan 50 dari {filtered.length} data. Gunakan filter untuk mempersempit hasil.
+                  <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
+                    <span className="text-xs text-muted-foreground">Menampilkan 50 dari {filtered.length} data — gunakan filter untuk mempersempit hasil</span>
                   </div>
                 )}
               </div>

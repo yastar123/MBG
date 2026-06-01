@@ -383,7 +383,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Page content — extra pb on mobile for bottom nav */}
           <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
-            <div className="mx-auto max-w-6xl animate-slide-up">
+            <div key={location} className="mx-auto max-w-6xl animate-slide-up">
               {children}
             </div>
           </div>

@@ -312,10 +312,10 @@ export default function PenggunaPage() {
               </div>
             </div>
             <div className="space-y-1.5"><Label>Dapur <span className="text-muted-foreground text-xs">(opsional)</span></Label>
-              <Select value={form.dapur_id} onValueChange={v => setForm(f => ({...f, dapur_id: v}))}>
+              <Select value={form.dapur_id || "none"} onValueChange={v => setForm(f => ({...f, dapur_id: v === "none" ? "" : v}))}>
                 <SelectTrigger><SelectValue placeholder="Tidak terkait dapur" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tidak terkait dapur</SelectItem>
+                  <SelectItem value="none">Tidak terkait dapur</SelectItem>
                   {(dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}
                 </SelectContent>
               </Select>
