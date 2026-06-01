@@ -33,7 +33,7 @@ const roleColors: Record<string, string> = {
   supplier: "bg-gray-100 text-gray-700",
 };
 
-const emptyForm = { nama: "", email: "", password_hash: "", role: "staff_dapur", dapur_id: "", no_hp: "" };
+const emptyForm = { nama: "", email: "", password: "", role: "staff_dapur", dapur_id: "", no_hp: "" };
 
 export default function PenggunaPage() {
   const qc = useQueryClient();
@@ -69,7 +69,7 @@ export default function PenggunaPage() {
       const payload: Record<string, unknown> = { ...form };
       if (form.dapur_id) payload.dapur_id = parseInt(form.dapur_id);
       else payload.dapur_id = null;
-      if (!editing) payload.password_hash = form.password_hash;
+      if (!editing) payload.password = form.password;
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error();
       return r.json();
@@ -81,7 +81,7 @@ export default function PenggunaPage() {
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
   function openEdit(u: User) {
     setEditing(u);
-    setForm({ nama: u.nama, email: u.email, password_hash: "", role: u.role, dapur_id: u.dapur_id?.toString() ?? "", no_hp: u.no_hp ?? "" });
+    setForm({ nama: u.nama, email: u.email, password: "", role: u.role, dapur_id: u.dapur_id?.toString() ?? "", no_hp: u.no_hp ?? "" });
     setOpen(true);
   }
 
@@ -248,7 +248,7 @@ export default function PenggunaPage() {
             {!editing && (
               <div className="space-y-1.5">
                 <Label>Password</Label>
-                <Input type="password" value={form.password_hash} onChange={e => setForm(f => ({...f, password_hash: e.target.value}))} placeholder="Minimal 6 karakter" />
+                <Input type="password" value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))} placeholder="Minimal 6 karakter" />
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -274,7 +274,7 @@ export default function PenggunaPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password_hash)}>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password)}>
               {save.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>

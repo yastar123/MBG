@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "tBPaScVtMJprvOw-nmmHy"
+uri = "file://LAPORAN_AUDIT.md"
+type = "text"
+title = "Laporan Audit MBG Dapur"

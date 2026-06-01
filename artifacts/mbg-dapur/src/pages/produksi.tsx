@@ -25,11 +25,12 @@ const today = new Date().toISOString().slice(0, 10);
 const emptyAddForm = { dapur_id: "", menu_id: "", tanggal: today, target_porsi: "" };
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dotColor: string }> = {
-  dijadwalkan: { label: "Dijadwalkan", variant: "outline",     dotColor: "bg-muted-foreground/50" },
-  proses:      { label: "Proses",      variant: "secondary",   dotColor: "bg-amber-500" },
-  selesai:     { label: "Selesai",     variant: "secondary",   dotColor: "bg-blue-500" },
-  qc_lulus:    { label: "QC Lulus",    variant: "default",     dotColor: "bg-primary" },
-  qc_gagal:    { label: "QC Gagal",    variant: "destructive", dotColor: "bg-destructive" },
+  dijadwalkan:  { label: "Dijadwalkan",  variant: "outline",     dotColor: "bg-muted-foreground/50" },
+  berlangsung:  { label: "Berlangsung",  variant: "secondary",   dotColor: "bg-amber-400" },
+  proses:       { label: "Proses",       variant: "secondary",   dotColor: "bg-amber-500" },
+  selesai:      { label: "Selesai",      variant: "secondary",   dotColor: "bg-blue-500" },
+  qc_lulus:     { label: "QC Lulus",     variant: "default",     dotColor: "bg-primary" },
+  qc_gagal:     { label: "QC Gagal",     variant: "destructive", dotColor: "bg-destructive" },
 };
 
 export default function ProduksiPage() {
