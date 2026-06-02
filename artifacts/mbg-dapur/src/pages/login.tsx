@@ -3,7 +3,11 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Utensils, Loader2, Sparkles, ChefHat, Truck, BarChart3, ArrowRight, Eye, EyeOff } from "lucide-react";
+import {
+  Utensils, Loader2, Sparkles, ChefHat, Truck, BarChart3,
+  ArrowRight, Eye, EyeOff, ChevronDown, ChevronUp,
+  ShieldCheck, Users, Package, Building2, Car,
+} from "lucide-react";
 import { useLogin } from "@workspace/api-client-react";
 import { setToken } from "@/lib/auth";
 
@@ -23,11 +27,75 @@ const FEATURES = [
   { icon: BarChart3, label: "Laporan Keuangan Real-time", desc: "Monitoring anggaran dan realisasi pengeluaran" },
 ];
 
+const DEMO_ACCOUNTS = [
+  {
+    email: "admin@test.com",
+    password: "admin123",
+    nama: "Super Admin",
+    role: "Super Admin",
+    icon: ShieldCheck,
+    color: "text-violet-600",
+    bg: "bg-violet-50 border-violet-200",
+    badge: "bg-violet-100 text-violet-700 border-violet-200",
+  },
+  {
+    email: "kepala1@mbg.id",
+    password: "admin123",
+    nama: "Siti Rahayu",
+    role: "Kepala Dapur",
+    icon: ChefHat,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50 border-emerald-200",
+    badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  },
+  {
+    email: "staff1@mbg.id",
+    password: "admin123",
+    nama: "Dewi Lestari",
+    role: "Staff Dapur",
+    icon: Users,
+    color: "text-blue-600",
+    bg: "bg-blue-50 border-blue-200",
+    badge: "bg-blue-100 text-blue-700 border-blue-200",
+  },
+  {
+    email: "gudang@mbg.id",
+    password: "admin123",
+    nama: "Lina Marlina",
+    role: "Admin Gudang",
+    icon: Package,
+    color: "text-amber-600",
+    bg: "bg-amber-50 border-amber-200",
+    badge: "bg-amber-100 text-amber-700 border-amber-200",
+  },
+  {
+    email: "yayasan@mbg.id",
+    password: "admin123",
+    nama: "Drs. Bambang Irawan",
+    role: "Admin Yayasan",
+    icon: Building2,
+    color: "text-rose-600",
+    bg: "bg-rose-50 border-rose-200",
+    badge: "bg-rose-100 text-rose-700 border-rose-200",
+  },
+  {
+    email: "driver1@mbg.id",
+    password: "admin123",
+    nama: "Hendra Gunawan",
+    role: "Driver",
+    icon: Car,
+    color: "text-sky-600",
+    bg: "bg-sky-50 border-sky-200",
+    badge: "bg-sky-100 text-sky-700 border-sky-200",
+  },
+];
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const login = useLogin();
   const [showPassword, setShowPassword] = useState(false);
+  const [showAllAccounts, setShowAllAccounts] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -47,13 +115,17 @@ export default function Login() {
     });
   };
 
-  function fillDemo() {
-    form.setValue("email", "admin@test.com");
-    form.setValue("password", "admin123");
+  function fillAccount(email: string, password: string) {
+    form.setValue("email", email);
+    form.setValue("password", password);
+    form.clearErrors();
   }
+
+  const visibleAccounts = showAllAccounts ? DEMO_ACCOUNTS : DEMO_ACCOUNTS.slice(0, 2);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left panel */}
       <div className="hidden lg:flex lg:w-[52%] gradient-primary flex-col justify-between p-12 relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-white/5 blur-3xl" />
@@ -121,8 +193,10 @@ export default function Login() {
         </div>
       </div>
 
+      {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background min-h-screen lg:min-h-0 content-area-bg">
         <div className="w-full max-w-sm animate-scale-in">
+          {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
             <div className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-md">
               <Utensils size={20} />
@@ -209,26 +283,58 @@ export default function Login() {
             </form>
           </Form>
 
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="w-full group cursor-pointer p-4 rounded-xl bg-muted/40 border border-dashed border-border/60 hover:bg-muted hover:border-primary/40 transition-all duration-200 text-left"
-            >
-              <p className="text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors mb-2 flex items-center gap-1.5">
-                <Sparkles size={11} />
-                Klik untuk isi otomatis akun demo
-              </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-mono text-foreground leading-tight">admin@test.com</p>
-                  <p className="text-xs text-muted-foreground font-mono mt-0.5">admin123</p>
-                </div>
-                <div className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-lg font-semibold border border-primary/15">
-                  Super Admin
-                </div>
-              </div>
-            </button>
+          {/* Demo accounts section */}
+          <div className="mt-6 space-y-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles size={11} className="text-muted-foreground" />
+              <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">Akun Demo — klik untuk isi otomatis</p>
+            </div>
+
+            <div className="space-y-2">
+              {visibleAccounts.map((acc, i) => {
+                const Icon = acc.icon;
+                return (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => fillAccount(acc.email, acc.password)}
+                    className={`w-full group cursor-pointer px-3.5 py-2.5 rounded-xl border transition-all duration-200 hover:shadow-sm text-left flex items-center gap-3 ${acc.bg} hover:scale-[1.01] active:scale-[0.99]`}
+                    style={{ animationDelay: `${i * 0.05}s` }}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/80 shadow-sm`}>
+                      <Icon size={15} className={acc.color} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono text-foreground/80 leading-tight truncate">{acc.email}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{acc.password}</p>
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${acc.badge}`}>
+                      {acc.role}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {DEMO_ACCOUNTS.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setShowAllAccounts(v => !v)}
+                className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
+              >
+                {showAllAccounts ? (
+                  <>
+                    <ChevronUp size={13} />
+                    Sembunyikan akun lainnya
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={13} />
+                    Lihat {DEMO_ACCOUNTS.length - 2} akun lainnya
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle, X, Loader2 } from "lucide-react";
+import { Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };

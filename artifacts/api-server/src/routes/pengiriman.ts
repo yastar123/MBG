@@ -7,15 +7,13 @@ const router = Router();
 
 router.get("/pengiriman/status-summary", authMiddleware, async (_req, res) => {
   const list = await db.select().from(pengirimanTable);
-  const today = new Date().toISOString().slice(0, 10);
-  const todayList = list.filter((p) => p.tanggal === today);
   const summary = {
-    dijadwalkan: todayList.filter((p) => p.status === "dijadwalkan").length,
-    berangkat: todayList.filter((p) => p.status === "berangkat").length,
-    tiba: todayList.filter((p) => p.status === "tiba").length,
-    selesai: todayList.filter((p) => p.status === "selesai").length,
-    gagal: todayList.filter((p) => p.status === "gagal").length,
-    total: todayList.length,
+    dijadwalkan: list.filter((p) => p.status === "dijadwalkan").length,
+    berangkat: list.filter((p) => p.status === "berangkat").length,
+    tiba: list.filter((p) => p.status === "tiba").length,
+    selesai: list.filter((p) => p.status === "selesai").length,
+    gagal: list.filter((p) => p.status === "gagal").length,
+    total: list.length,
   };
   res.json(summary);
 });
