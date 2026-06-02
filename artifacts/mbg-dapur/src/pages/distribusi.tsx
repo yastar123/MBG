@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, Plus, Pencil, CheckCircle, Clock, XCircle, MapPin, Search, X } from "lucide-react";
+import { Truck, Plus, Pencil, Trash2, CheckCircle, Clock, XCircle, MapPin, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Pengiriman = {
@@ -44,8 +44,24 @@ export default function DistribusiPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showAllRows, setShowAllRows] = useState(false);
+  const [delId, setDelId] = useState<number | null>(null);
 
   const drivers = userList?.filter(u => u.role === "driver") ?? [];
+
+  const del = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/pengiriman/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/pengiriman"] });
+      qc.invalidateQueries({ queryKey: ["/api/pengiriman/status-summary"] });
+      qc.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
+      toast({ title: "Pengiriman dihapus" });
+      setDelId(null);
+    },
+    onError: () => toast({ title: "Gagal menghapus", variant: "destructive" }),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -180,6 +196,9 @@ export default function DistribusiPage() {
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(p)}>
                           <Pencil size={13} />
                         </Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(p.id)}>
+                          <Trash2 size={13} />
+                        </Button>
                       </div>
                     </div>
                   );
@@ -280,9 +299,14 @@ export default function DistribusiPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(p)}>
-                          <Pencil size={13} />
-                        </Button>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(p)}>
+                            <Pencil size={13} />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(p.id)}>
+                            <Trash2 size={13} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -308,6 +332,24 @@ export default function DistribusiPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={delId !== null} onOpenChange={() => setDelId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Hapus Pengiriman</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Yakin ingin menghapus pengiriman ke{" "}
+            <span className="font-semibold text-foreground">
+              {(data ?? []).find(p => p.id === delId)?.tujuan}
+            </span>? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>
+              {del.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditing(null); setForm(getEmptyForm()); } }}>
         <DialogContent className="sm:max-w-md">

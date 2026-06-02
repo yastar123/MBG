@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, usersTable, dapurTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+import bcrypt from "bcryptjs";
 
 const router = Router();
 
@@ -37,9 +38,10 @@ router.post("/users", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const hashed = await bcrypt.hash(password, 10);
   const [user] = await db
     .insert(usersTable)
-    .values({ nama, email, password_hash: password, role, dapur_id: dapur_id ?? null, no_hp: no_hp ?? null })
+    .values({ nama, email, password_hash: hashed, role, dapur_id: dapur_id ?? null, no_hp: no_hp ?? null })
     .returning();
   const { password_hash, ...safeUser } = user;
   res.status(201).json({ ...safeUser, dapur_nama: null });
@@ -56,10 +58,18 @@ router.get("/users/:id", authMiddleware, async (req, res) => {
 
 router.patch("/users/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
-  const { nama, email, role, dapur_id, no_hp, is_active } = req.body;
+  const { nama, email, role, dapur_id, no_hp, is_active, password } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (nama !== undefined) updateData.nama = nama;
+  if (email !== undefined) updateData.email = email;
+  if (role !== undefined) updateData.role = role;
+  if (dapur_id !== undefined) updateData.dapur_id = dapur_id;
+  if (no_hp !== undefined) updateData.no_hp = no_hp;
+  if (is_active !== undefined) updateData.is_active = is_active;
+  if (password) updateData.password_hash = await bcrypt.hash(password, 10);
   const [user] = await db
     .update(usersTable)
-    .set({ nama, email, role, dapur_id, no_hp, is_active })
+    .set(updateData)
     .where(eq(usersTable.id, id))
     .returning();
   if (!user) { res.status(404).json({ error: "User tidak ditemukan" }); return; }

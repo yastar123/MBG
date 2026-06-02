@@ -59,14 +59,30 @@ router.get("/pengiriman/:id", authMiddleware, async (req, res) => {
 
 router.patch("/pengiriman/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
-  const { driver_id, status, catatan, jumlah_porsi } = req.body;
+  const { dapur_id, driver_id, status, catatan, jumlah_porsi, tujuan, tanggal } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (dapur_id !== undefined) updateData.dapur_id = parseInt(dapur_id);
+  if (driver_id !== undefined) updateData.driver_id = driver_id ? parseInt(driver_id) : null;
+  if (status !== undefined) updateData.status = status;
+  if (catatan !== undefined) updateData.catatan = catatan;
+  if (jumlah_porsi !== undefined) updateData.jumlah_porsi = parseInt(jumlah_porsi);
+  if (tujuan !== undefined) updateData.tujuan = tujuan;
+  if (tanggal !== undefined) updateData.tanggal = tanggal;
   const [p] = await db
     .update(pengirimanTable)
-    .set({ driver_id: driver_id ? parseInt(driver_id) : undefined, status, catatan, jumlah_porsi: jumlah_porsi ? parseInt(jumlah_porsi) : undefined })
+    .set(updateData)
     .where(eq(pengirimanTable.id, id))
     .returning();
   if (!p) { res.status(404).json({ error: "Pengiriman tidak ditemukan" }); return; }
-  res.json({ ...p, dapur_nama: null, driver_nama: null });
+  const dapurList = await db.select().from(dapurTable);
+  const users = await db.select().from(usersTable);
+  res.json({ ...p, dapur_nama: dapurList.find(d => d.id === p.dapur_id)?.nama ?? null, driver_nama: users.find(u => u.id === p.driver_id)?.nama ?? null });
+});
+
+router.delete("/pengiriman/:id", authMiddleware, async (req, res) => {
+  const id = parseInt(req.params["id"] as string);
+  await db.delete(pengirimanTable).where(eq(pengirimanTable.id, id));
+  res.status(204).end();
 });
 
 export default router;

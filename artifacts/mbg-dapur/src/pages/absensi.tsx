@@ -86,7 +86,10 @@ export default function AbsensiPage() {
   const countHadir = todayData.filter(a => a.status === "hadir").length;
   const countTidakHadir = todayData.filter(a => a.status === "tidak_hadir").length;
   const countIzin = todayData.filter(a => ["izin", "sakit"].includes(a.status)).length;
-  const staffList = userList?.filter(u => ["staff_dapur", "kepala_dapur", "admin_dapur"].includes(u.role)) ?? [];
+  const allStaff = userList?.filter(u => ["staff_dapur", "kepala_dapur", "admin_dapur"].includes(u.role)) ?? [];
+  const staffList = form.dapur_id
+    ? allStaff.filter(u => u.dapur_id === parseInt(form.dapur_id) || !u.dapur_id)
+    : allStaff;
 
   const filtered = (data ?? []).filter(a => {
     const matchSearch = !search || a.user_nama?.toLowerCase().includes(search.toLowerCase()) || a.dapur_nama?.toLowerCase().includes(search.toLowerCase());
@@ -286,7 +289,7 @@ export default function AbsensiPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Dapur</Label>
-              <Select value={form.dapur_id} onValueChange={v => setForm(f => ({...f, dapur_id: v}))} disabled={!!editing}>
+              <Select value={form.dapur_id} onValueChange={v => setForm(f => ({...f, dapur_id: v, user_id: ""}))} disabled={!!editing}>
                 <SelectTrigger><SelectValue placeholder="Pilih dapur" /></SelectTrigger>
                 <SelectContent>{(dapurList ?? []).map(d => <SelectItem key={d.id} value={String(d.id)}>{d.nama}</SelectItem>)}</SelectContent>
               </Select>

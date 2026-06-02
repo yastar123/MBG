@@ -17,6 +17,7 @@ type Dapur = {
   kapasitas_porsi: number; kepala_dapur_id: number | null;
   kepala_dapur_nama: string | null; status: string;
 };
+type User = { id: number; nama: string; role: string };
 
 async function fetchDapur(): Promise<Dapur[]> {
   const r = await fetch("/api/dapur");
@@ -24,22 +25,30 @@ async function fetchDapur(): Promise<Dapur[]> {
   return r.json();
 }
 
-const emptyForm = { nama: "", lokasi: "", alamat: "", kapasitas_porsi: "", status: "aktif" };
+const emptyForm = { nama: "", lokasi: "", alamat: "", kapasitas_porsi: "", kepala_dapur_id: "", status: "aktif" };
 
 export default function DapurPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data, isLoading } = useQuery({ queryKey: ["/api/dapur"], queryFn: fetchDapur });
+  const { data: userList } = useQuery<User[]>({ queryKey: ["/api/users"], queryFn: async () => (await fetch("/api/users")).json() });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Dapur | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [delId, setDelId] = useState<number | null>(null);
+  
+  const kepalaOptions = (userList ?? []).filter(u => ["kepala_dapur", "admin_dapur"].includes(u.role));
 
   const save = useMutation({
     mutationFn: async () => {
       const url = editing ? `/api/dapur/${editing.id}` : "/api/dapur";
       const method = editing ? "PATCH" : "POST";
-      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const payload = {
+        ...form,
+        kepala_dapur_id: form.kepala_dapur_id ? parseInt(form.kepala_dapur_id) : null,
+        kapasitas_porsi: form.kapasitas_porsi ? parseInt(form.kapasitas_porsi) : undefined,
+      };
+      const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error("Gagal menyimpan");
       return r.json();
     },
@@ -67,7 +76,7 @@ export default function DapurPage() {
   function openAdd() { setEditing(null); setForm(emptyForm); setOpen(true); }
   function openEdit(d: Dapur) {
     setEditing(d);
-    setForm({ nama: d.nama, lokasi: d.lokasi, alamat: d.alamat ?? "", kapasitas_porsi: String(d.kapasitas_porsi), status: d.status });
+    setForm({ nama: d.nama, lokasi: d.lokasi, alamat: d.alamat ?? "", kapasitas_porsi: String(d.kapasitas_porsi), kepala_dapur_id: d.kepala_dapur_id?.toString() ?? "", status: d.status });
     setOpen(true);
   }
 
@@ -216,6 +225,25 @@ export default function DapurPage() {
                 placeholder="500"
                 min={1}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Kepala Dapur <span className="text-muted-foreground text-xs">(opsional)</span></Label>
+              <Select value={form.kepala_dapur_id || "none"} onValueChange={v => setForm(f => ({...f, kepala_dapur_id: v === "none" ? "" : v}))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Belum ditentukan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Belum ditentukan</SelectItem>
+                  {kepalaOptions.map(u => (
+                    <SelectItem key={u.id} value={String(u.id)}>{u.nama}</SelectItem>
+                  ))}
+                  {kepalaOptions.length === 0 && (
+                    <div className="py-3 text-center text-xs text-muted-foreground">
+                      Belum ada pengguna dengan role Kepala Dapur
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
