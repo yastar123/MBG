@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChefHat, Plus, Pencil, Trash2, MapPin, Users, UtensilsCrossed } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, MapPin, Users, UtensilsCrossed, CheckCircle2, MinusCircle, Search, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,8 +36,20 @@ export default function DapurPage() {
   const [editing, setEditing] = useState<Dapur | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [delId, setDelId] = useState<number | null>(null);
-  
+  const [search, setSearch] = useState("");
+
   const kepalaOptions = (userList ?? []).filter(u => ["kepala_dapur", "admin_dapur"].includes(u.role));
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return data ?? [];
+    const q = search.toLowerCase();
+    return (data ?? []).filter(d =>
+      d.nama.toLowerCase().includes(q) ||
+      d.lokasi.toLowerCase().includes(q) ||
+      (d.alamat ?? "").toLowerCase().includes(q) ||
+      (d.kepala_dapur_nama ?? "").toLowerCase().includes(q)
+    );
+  }, [data, search]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -89,22 +101,49 @@ export default function DapurPage() {
           <h1 className="page-heading">Manajemen Dapur</h1>
           <p className="page-subheading">Kelola semua unit dapur MBG</p>
         </div>
-        <Button onClick={openAdd} className="gap-2 shrink-0">
-          <Plus size={16} /> Tambah Dapur
-        </Button>
+        <div className="flex items-center gap-2">
+          {(data ?? []).length > 0 && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+              <Input
+                placeholder="Cari dapur..."
+                className="pl-9 h-9 text-sm pr-8 w-44 sm:w-52"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          )}
+          <Button onClick={openAdd} className="gap-2 shrink-0">
+            <Plus size={16} /> Tambah Dapur
+          </Button>
+        </div>
       </div>
 
       {!isLoading && data && data.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
           {[
-            { label: "Total Dapur", value: data.length, color: "text-foreground", bg: "bg-muted/50" },
-            { label: "Aktif", value: aktifCount, color: "text-primary", bg: "bg-primary/5 border border-primary/10" },
-            { label: "Nonaktif", value: data.length - aktifCount, color: "text-muted-foreground", bg: "bg-muted/50" },
+            { label: "Total Dapur",  value: data.length,           icon: ChefHat,     iconBg: "bg-primary/10 text-primary",          valueClass: "text-foreground",       delay: "0s" },
+            { label: "Aktif",        value: aktifCount,             icon: CheckCircle2, iconBg: "bg-emerald-100 text-emerald-600",     valueClass: "text-emerald-700",      delay: "0.05s" },
+            { label: "Nonaktif",     value: data.length - aktifCount, icon: MinusCircle, iconBg: "bg-muted text-muted-foreground",    valueClass: "text-muted-foreground", delay: "0.1s" },
           ].map(stat => (
-            <div key={stat.label} className={`${stat.bg} rounded-xl p-4 text-center`}>
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-            </div>
+            <Card key={stat.label} className="shadow-sm animate-slide-up" style={{ animationDelay: stat.delay }}>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`stat-card-icon w-10 h-10 ${stat.iconBg}`}>
+                    <stat.icon size={17} />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold tabular-nums ${stat.valueClass}`}>{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -122,9 +161,18 @@ export default function DapurPage() {
           <p className="text-sm text-muted-foreground mb-4">Mulai dengan menambahkan unit dapur pertama</p>
           <Button onClick={openAdd} size="sm" className="gap-2"><Plus size={14} />Tambah Dapur</Button>
         </div>
+      ) : filtered.length === 0 && search ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+          <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-3">
+            <Search size={22} className="text-muted-foreground" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-1">Tidak ditemukan</h3>
+          <p className="text-sm text-muted-foreground mb-3">Tidak ada dapur yang cocok dengan "<span className="font-medium">{search}</span>"</p>
+          <Button variant="outline" size="sm" onClick={() => setSearch("")} className="gap-1.5"><X size={13} /> Hapus pencarian</Button>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(data ?? []).map((d, idx) => (
+          {filtered.map((d, idx) => (
             <Card
               key={d.id}
               className="shadow-sm card-hover animate-slide-up"

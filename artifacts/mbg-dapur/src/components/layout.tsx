@@ -98,7 +98,7 @@ function isActive(location: string, href: string): boolean {
   return location === href || location.startsWith(href + "/");
 }
 
-function SidebarInner({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
+function SidebarInner({ location, onNavigate, onClose }: { location: string; onNavigate?: () => void; onClose?: () => void }) {
   const { data: user, isLoading } = useGetMe();
   const logout = useLogout();
   const handleLogout = () => { logout.mutate(undefined, { onSettled: () => clearToken() }); };
@@ -110,10 +110,19 @@ function SidebarInner({ location, onNavigate }: { location: string; onNavigate?:
           <div className="bg-sidebar-primary/25 text-sidebar-primary-foreground p-2 rounded-lg border border-sidebar-primary/30 shadow-sm">
             <Utensils size={17} />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="font-bold text-sm tracking-tight leading-none text-sidebar-foreground">MBG Dapur</h2>
             <p className="text-xs text-sidebar-foreground/45 font-medium mt-0.5">Sistem Manajemen</p>
           </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/40 rounded-md transition-all shrink-0 min-w-[30px] min-h-[30px] flex items-center justify-center"
+              aria-label="Tutup menu"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
       </SidebarHeader>
 
@@ -329,9 +338,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile drawer */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-72 bg-sidebar border-r border-sidebar-border [&>button]:hidden">
+          <SheetContent side="left" className="p-0 w-72 bg-sidebar border-r border-sidebar-border [&>button]:hidden" aria-describedby={undefined}>
             <div className="flex flex-col h-full">
-              <SidebarInner location={location} onNavigate={() => setMobileOpen(false)} />
+              <SidebarInner location={location} onNavigate={() => setMobileOpen(false)} onClose={() => setMobileOpen(false)} />
             </div>
           </SheetContent>
         </Sheet>

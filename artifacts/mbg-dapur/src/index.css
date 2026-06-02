@@ -322,10 +322,6 @@
     box-shadow: 0 0 0 3px hsl(var(--ring) / 0.12), 0 1px 3px hsl(var(--foreground) / 0.06);
   }
 
-  /* ── Card hover elevation ── */
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-px cursor-default;
-  }
 }
 
 /* ── Keyframes ── */

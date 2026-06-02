@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle, ClipboardList, RefreshCw } from "lucide-react";
+import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle2, ClipboardList, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -161,14 +161,23 @@ export default function GudangPage() {
       {!loadingStok && stok && stok.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
           {[
-            { label: "Total Bahan", value: stok.length, icon: Package, bg: "bg-muted/50", color: "text-foreground", border: "border-transparent" },
-            { label: "Stok Rendah", value: alertItems.length, icon: TrendingDown, bg: alertItems.length > 0 ? "bg-destructive/5" : "bg-muted/50", color: alertItems.length > 0 ? "text-destructive" : "text-muted-foreground", border: alertItems.length > 0 ? "border border-destructive/20" : "border-transparent" },
-            { label: "Stok Aman", value: amanItems.length, icon: CheckCircle, bg: "bg-primary/5", color: "text-primary", border: "border border-primary/10" },
-          ].map((stat, i) => (
-            <div key={stat.label} className={`${stat.bg} ${stat.border} rounded-xl p-4 text-center animate-slide-up`} style={{ animationDelay: `${i * 0.06}s` }}>
-              <p className={`text-2xl font-bold ${stat.color} animate-count-up`}>{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-            </div>
+            { label: "Total Bahan",  value: stok.length,       icon: Package,     iconBg: "bg-primary/10 text-primary",          valueClass: "text-foreground",       delay: "0s" },
+            { label: "Stok Rendah",  value: alertItems.length, icon: TrendingDown, iconBg: alertItems.length > 0 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground", valueClass: alertItems.length > 0 ? "text-destructive" : "text-muted-foreground", delay: "0.05s" },
+            { label: "Stok Aman",    value: amanItems.length,  icon: CheckCircle2, iconBg: "bg-emerald-100 text-emerald-600",    valueClass: "text-emerald-700",      delay: "0.1s" },
+          ].map(stat => (
+            <Card key={stat.label} className="shadow-sm animate-slide-up" style={{ animationDelay: stat.delay }}>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`stat-card-icon w-10 h-10 ${stat.iconBg}`}>
+                    <stat.icon size={17} />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold tabular-nums animate-count-up ${stat.valueClass}`}>{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

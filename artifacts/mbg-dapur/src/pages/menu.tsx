@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UtensilsCrossed, Plus, Pencil, Trash2, Flame, CalendarDays, Search } from "lucide-react";
+import { UtensilsCrossed, Plus, Pencil, Trash2, Flame, CalendarDays, Search, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
@@ -137,10 +137,15 @@ export default function MenuPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
                 <Input
                   placeholder="Cari menu..."
-                  className="pl-9 h-9 text-sm"
+                  className="pl-9 h-9 text-sm pr-8"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                    <X size={13} />
+                  </button>
+                )}
               </div>
             </div>
           </CardHeader>

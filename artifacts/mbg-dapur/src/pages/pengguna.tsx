@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle } from "lucide-react";
+import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };
@@ -166,10 +166,15 @@ export default function PenggunaPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
               <Input
                 placeholder="Cari nama, email, role..."
-                className="pl-9 h-9 text-sm"
+                className="pl-9 h-9 text-sm pr-8"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  <X size={13} />
+                </button>
+              )}
             </div>
             <span className="text-sm text-muted-foreground shrink-0">{filtered.length} pengguna</span>
           </div>

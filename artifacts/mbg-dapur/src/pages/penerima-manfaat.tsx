@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Pencil, Trash2, Search, GraduationCap, School } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Search, GraduationCap, School, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -154,7 +154,12 @@ export default function PenerimaManfaatPage() {
             </CardTitle>
             <div className="relative max-w-xs w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-              <Input placeholder="Cari nama, sekolah, wilayah..." className="pl-9 h-9 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
+              <Input placeholder="Cari nama, sekolah, wilayah..." className="pl-9 h-9 text-sm pr-8" value={search} onChange={e => setSearch(e.target.value)} />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  <X size={13} />
+                </button>
+              )}
             </div>
           </div>
         </CardHeader>

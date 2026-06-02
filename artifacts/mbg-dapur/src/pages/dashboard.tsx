@@ -136,7 +136,7 @@ export default function Dashboard() {
         {stats.map((card) => (
           <Card
             key={card.title}
-            className={`shadow-sm card-hover animate-slide-up overflow-hidden border ${card.border} ${card.title === "Peringatan Stok" ? "col-span-2 md:col-span-1" : ""}`}
+            className={`relative shadow-sm card-hover animate-slide-up overflow-hidden border ${card.border} ${card.title === "Peringatan Stok" ? "col-span-2 md:col-span-1" : ""}`}
             style={{ animationDelay: card.delay }}
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${card.accent} pointer-events-none`} />
