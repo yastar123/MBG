@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, absensiTable, dapurTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -23,6 +23,16 @@ router.post("/absensi", authMiddleware, async (req, res) => {
   const { dapur_id, user_id, tanggal, status, keterangan } = req.body;
   if (!dapur_id || !user_id || !tanggal || !status) {
     res.status(400).json({ error: "Data tidak lengkap" });
+    return;
+  }
+  // Prevent duplicate attendance for same user on same day
+  const existing = await db.select().from(absensiTable)
+    .where(and(
+      eq(absensiTable.user_id, parseInt(user_id)),
+      eq(absensiTable.tanggal, tanggal)
+    )).limit(1);
+  if (existing.length > 0) {
+    res.status(409).json({ error: "Absensi untuk staff ini sudah dicatat pada tanggal tersebut" });
     return;
   }
   const [a] = await db

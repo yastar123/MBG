@@ -104,7 +104,7 @@ export default function Login() {
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     login.mutate({ data: values }, {
-      onSuccess: (res) => {
+      onSuccess: (res: { token: string; user: { nama: string } }) => {
         setToken(res.token);
         toast({ title: "Selamat datang kembali!", description: `Login sebagai ${res.user.nama}` });
         setLocation("/dashboard");

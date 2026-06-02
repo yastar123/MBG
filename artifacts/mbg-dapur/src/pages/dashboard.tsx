@@ -15,25 +15,61 @@ import {
   ArrowDownRight,
   RefreshCw,
   Users,
+  CheckCircle2,
+  Clock,
+  Target,
+  Zap,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Progress } from "@/components/ui/progress";
+import { Link } from "wouter";
+
+type ProduksiSession = {
+  id: number; tanggal: string; target_porsi: number; realisasi_porsi: number | null;
+  status: string; dapur_nama: string | null; menu_nama: string | null;
+};
+
+const statusProduksi: Record<string, { label: string; dot: string; badge: "default" | "secondary" | "destructive" | "outline" }> = {
+  dijadwalkan: { label: "Dijadwalkan", dot: "bg-muted-foreground/40", badge: "outline" },
+  berlangsung: { label: "Berlangsung", dot: "bg-amber-400", badge: "secondary" },
+  proses:      { label: "Proses",      dot: "bg-amber-500", badge: "secondary" },
+  selesai:     { label: "Selesai",     dot: "bg-blue-500",  badge: "secondary" },
+  qc_lulus:    { label: "QC Lulus",    dot: "bg-primary",   badge: "default" },
+  qc_gagal:    { label: "QC Gagal",    dot: "bg-destructive", badge: "destructive" },
+};
 
 export default function Dashboard() {
   const qc = useQueryClient();
   const { data: summary, isLoading: isLoadingSummary, isFetching } = useGetDashboardSummary();
   const { data: trends, isLoading: isLoadingTrends } = useGetDashboardTrends();
   const { data: me } = useGetMe();
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: todaySessions, isLoading: isLoadingSessions } = useQuery<ProduksiSession[]>({
+    queryKey: ["/api/produksi", "today"],
+    queryFn: async () => {
+      const all: ProduksiSession[] = await (await fetch("/api/produksi")).json();
+      return all.filter(p => p.tanggal === today);
+    },
+    staleTime: 30_000,
+  });
+
   const hour = new Date().getHours();
   const greeting = hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
     qc.invalidateQueries({ queryKey: ["/api/dashboard/trends"] });
+    qc.invalidateQueries({ queryKey: ["/api/produksi", "today"] });
   }
+
+  const totalTarget = (todaySessions ?? []).reduce((s, p) => s + p.target_porsi, 0);
+  const totalRealisasi = (todaySessions ?? []).reduce((s, p) => s + (p.realisasi_porsi ?? 0), 0);
+  const persen = totalTarget > 0 ? Math.round((totalRealisasi / totalTarget) * 100) : 0;
 
   const stats = [
     {
@@ -96,13 +132,13 @@ export default function Dashboard() {
       trend: (summary?.stok_alert_count ?? 0) > 0
         ? <ArrowDownRight size={14} className="text-destructive/60" />
         : <ArrowUpRight size={14} className="text-muted-foreground/30" />,
-      alert: (summary?.stok_alert_count ?? 0) > 0,
       delay: "0.20s",
     },
   ];
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="animate-fade-in flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
@@ -116,7 +152,7 @@ export default function Dashboard() {
             </span>
           </div>
           <p className="page-subheading">
-            {greeting}, <span className="font-semibold text-foreground">{me?.nama ?? "—"}</span> — ringkasan harian performa dapur MBG nasional.
+            {greeting}, <span className="font-semibold text-foreground">{me?.nama ?? "—"}</span> — ringkasan harian performa dapur MBG.
           </p>
         </div>
         <Button
@@ -131,7 +167,7 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Stat cards — 5 items: 2 on mobile, 3 on md, 5 on xl */}
+      {/* Stat cards */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {stats.map((card) => (
           <Card
@@ -150,7 +186,7 @@ export default function Dashboard() {
               {isLoadingSummary ? (
                 <Skeleton className="h-9 w-20 mb-1.5" />
               ) : (
-                <div className={`text-2xl sm:text-3xl font-bold tracking-tight animate-count-up tabular-nums ${card.valueClass}`}>
+                <div className={`text-2xl sm:text-3xl font-bold tracking-tight animate-count-up tabular-nums stat-number ${card.valueClass}`}>
                   {card.value !== undefined && card.value !== null
                     ? Number(card.value).toLocaleString('id-ID')
                     : '—'}
@@ -310,26 +346,138 @@ export default function Dashboard() {
                       <p className="text-xs font-semibold text-foreground leading-tight truncate">{item.label}</p>
                       <p className="text-xs text-muted-foreground/65 truncate">{item.sub}</p>
                     </div>
-                    <span className={`font-bold text-lg shrink-0 tabular-nums ${item.valueClass}`}>{item.value}</span>
+                    <span className={`font-bold text-lg shrink-0 tabular-nums stat-number ${item.valueClass}`}>{item.value}</span>
                   </div>
                 ))}
 
                 {(summary?.stok_alert_count ?? 0) > 0 && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20 animate-slide-up" style={{ animationDelay: '0.5s' }}>
-                    <div className="w-9 h-9 rounded-lg bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
-                      <AlertTriangle size={15} />
+                  <Link href="/gudang">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20 animate-slide-up cursor-pointer hover:bg-destructive/8 transition-colors" style={{ animationDelay: '0.5s' }}>
+                      <div className="w-9 h-9 rounded-lg bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+                        <AlertTriangle size={15} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-destructive leading-tight">Peringatan Stok</p>
+                        <p className="text-xs text-muted-foreground/65">Klik untuk lihat gudang →</p>
+                      </div>
+                      <span className="font-bold text-lg text-destructive shrink-0 tabular-nums stat-number">{summary?.stok_alert_count}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-destructive leading-tight">Peringatan Stok</p>
-                      <p className="text-xs text-muted-foreground/65">Bahan di bawah minimum</p>
-                    </div>
-                    <span className="font-bold text-lg text-destructive shrink-0 tabular-nums">{summary?.stok_alert_count}</span>
-                  </div>
+                  </Link>
                 )}
               </>
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Sesi Produksi Hari Ini */}
+      <div className="animate-slide-up" style={{ animationDelay: '0.35s' }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="section-label mb-0.5">Produksi Hari Ini</p>
+            <h2 className="text-base font-bold text-foreground tracking-tight">Sesi Aktif</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            {totalTarget > 0 && (
+              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/40">
+                <Target size={11} />
+                <span className="font-medium tabular-nums">{totalRealisasi.toLocaleString("id-ID")}</span>
+                <span className="text-muted-foreground/50">/</span>
+                <span className="tabular-nums">{totalTarget.toLocaleString("id-ID")} porsi</span>
+                <span className={`font-semibold ml-1 ${persen >= 95 ? "text-primary" : persen >= 80 ? "text-amber-600" : "text-destructive"}`}>
+                  {persen}%
+                </span>
+              </div>
+            )}
+            <Link href="/produksi">
+              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                Lihat Semua <ArrowUpRight size={12} />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {isLoadingSessions ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          </div>
+        ) : (todaySessions ?? []).length === 0 ? (
+          <Card className="shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center">
+                <Zap size={20} className="text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground/70">Belum ada sesi produksi hari ini</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">Jadwalkan produksi di halaman Produksi</p>
+              </div>
+              <Link href="/produksi">
+                <Button size="sm" variant="outline" className="gap-1.5 mt-1">
+                  <Utensils size={13} /> Jadwalkan Produksi
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(todaySessions ?? []).map((session, i) => {
+              const pct = session.target_porsi > 0 && session.realisasi_porsi != null
+                ? Math.round((session.realisasi_porsi / session.target_porsi) * 100)
+                : null;
+              const cfg = statusProduksi[session.status];
+              const isLive = session.status === "berlangsung" || session.status === "proses";
+              return (
+                <div
+                  key={session.id}
+                  className="session-card animate-slide-up"
+                  style={{ animationDelay: `${0.04 + i * 0.05}s` }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0 mr-2">
+                      <p className="font-semibold text-sm leading-tight truncate">{session.dapur_nama}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{session.menu_nama}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isLive && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 live-dot" />
+                      )}
+                      <Badge variant={cfg?.badge ?? "outline"} className="text-[10px] px-1.5 py-0.5">
+                        {cfg?.label ?? session.status}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Realisasi</span>
+                      <span className="font-bold tabular-nums">
+                        {session.realisasi_porsi?.toLocaleString("id-ID") ?? "—"}
+                        <span className="text-muted-foreground font-normal"> / {session.target_porsi.toLocaleString("id-ID")}</span>
+                      </span>
+                    </div>
+                    {pct !== null ? (
+                      <>
+                        <Progress value={Math.min(pct, 100)} className="h-1.5" />
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground/70">Pencapaian</span>
+                          <span className={`font-semibold tabular-nums ${pct >= 95 ? "text-primary" : pct >= 80 ? "text-amber-600" : "text-destructive"}`}>
+                            {pct}%
+                            {pct >= 100 && <CheckCircle2 size={11} className="inline ml-1" />}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+                        <Clock size={11} />
+                        <span>Menunggu realisasi</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

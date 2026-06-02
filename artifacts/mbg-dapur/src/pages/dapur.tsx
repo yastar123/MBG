@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChefHat, Plus, Pencil, Trash2, MapPin, Users, UtensilsCrossed, CheckCircle2, MinusCircle, Search, X, Loader2 } from "lucide-react";
+import { ChefHat, Plus, Pencil, Trash2, MapPin, Users, UtensilsCrossed, CheckCircle2, MinusCircle, Search, X, Loader2, Navigation } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
@@ -207,7 +207,7 @@ export default function DapurPage() {
                 )}
                 {d.alamat && (
                   <div className="flex items-start gap-2 text-muted-foreground">
-                    <MapPin size={13} className="shrink-0 mt-0.5" />
+                    <Navigation size={13} className="shrink-0 mt-0.5" />
                     <span className="text-xs leading-relaxed">{d.alamat}</span>
                   </div>
                 )}

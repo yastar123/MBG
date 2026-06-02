@@ -87,7 +87,7 @@ export default function PengaturanPage() {
                 { label: "Database", value: "PostgreSQL 16", icon: Database, iconClass: "text-blue-500" },
                 { label: "Bahasa", value: "Indonesia", icon: Info, iconClass: "text-muted-foreground" },
                 { label: "Zona Waktu", value: "WIB (UTC+7)", icon: Settings, iconClass: "text-muted-foreground" },
-                { label: "Waktu Server", value: serverTime, icon: Clock, iconClass: "text-muted-foreground" },
+                { label: "Waktu Perangkat", value: serverTime, icon: Clock, iconClass: "text-muted-foreground" },
               ].map(item => (
                 <div key={item.label} className="flex items-center justify-between py-3 border-b last:border-0">
                   <div className="flex items-center gap-2.5">

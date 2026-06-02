@@ -49,7 +49,10 @@ export default function AbsensiPage() {
       const url = editing ? `/api/absensi/${editing.id}` : "/api/absensi";
       const method = editing ? "PATCH" : "POST";
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      if (!r.ok) throw new Error();
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error ?? "Gagal menyimpan");
+      }
       return r.json();
     },
     onSuccess: () => {
@@ -59,7 +62,7 @@ export default function AbsensiPage() {
       setEditing(null);
       setForm(getEmptyForm());
     },
-    onError: () => toast({ title: "Gagal menyimpan", variant: "destructive" }),
+    onError: (err: Error) => toast({ title: err.message || "Gagal menyimpan", variant: "destructive" }),
   });
 
   const del = useMutation({

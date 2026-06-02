@@ -4,3 +4,5 @@
 - [useGetMe Call](usegetme-call.md) — call useGetMe() with no arguments; passing { query: { retry: false } } causes TS error because TQ v5 requires queryKey when query options are passed.
 - [Gudang Stok Bug](gudang-stok-bug.md) — stok tab shows empty for all fresh bahan baku; fix requires POST /bahan-baku to also INSERT INTO stok with kuantitas=0; GET /stok backfills missing rows; PATCH /stok/:bahan_baku_id enables manual adjustment.
 - [CSS Utilities Pattern](css-utilities-pattern.md) — index.css uses @layer utilities for custom classes; Tailwind v4 theme tokens live in :root block; animation delays use inline style={{ animationDelay }} not Tailwind classes.
+- [Absensi Duplicate Guard](absensi-duplicate-guard.md) — POST /absensi checks for existing (user_id, tanggal) pair using Drizzle `and(eq, eq)` before INSERT; returns 409 with message; absensi.tsx surfaces the error message from the API response body.
+- [TS6305 Pre-existing](ts6305-preexisting.md) — @workspace/api-client-react exports .ts source via package.json exports; tsc can't resolve it (TS6305) but Vite resolves it fine at runtime; these errors are pre-existing infrastructure issues, not regressions.
