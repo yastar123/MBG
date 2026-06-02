@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { makeToken, authMiddleware, type AuthRequest } from "../middlewares/auth";
+import bcrypt from "bcryptjs";
 
 const router = Router();
 
@@ -25,7 +26,8 @@ router.post("/auth/login", async (req, res) => {
     res.status(401).json({ error: "Akun tidak aktif" });
     return;
   }
-  if (user[0].password_hash !== password) {
+  const passwordMatch = await bcrypt.compare(password, user[0].password_hash);
+  if (!passwordMatch) {
     res.status(401).json({ error: "Email atau password salah" });
     return;
   }
