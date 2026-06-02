@@ -22,6 +22,11 @@ INSERT INTO dapur (nama, lokasi, alamat, kapasitas_porsi, status) VALUES
   ('Dapur Bogor Selatan', 'Bogor', 'Jl. Raya Pajajaran No. 88, Bogor', 1800, 'aktif'),
   ('Dapur Tangerang Barat', 'Tangerang', 'Jl. Daan Mogot Km. 15, Tangerang', 1200, 'nonaktif');
 
+-- Ensure admin user exists (password = 'admin123')
+INSERT INTO users (nama, email, password_hash, role, is_active) VALUES
+  ('Super Admin', 'admin@test.com', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'super_admin', true)
+ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, is_active = EXCLUDED.is_active;
+
 -- USERS (password_hash = bcrypt of 'admin123')
 -- Using pre-computed bcrypt hash for 'admin123'
 INSERT INTO users (nama, email, password_hash, role, no_hp, is_active) VALUES
