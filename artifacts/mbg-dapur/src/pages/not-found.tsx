@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-background">
+    <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-background content-area-bg">
       <div className="animate-scale-in max-w-sm w-full">
         <div className="relative w-28 h-28 mx-auto mb-8">
           <div className="absolute inset-0 rounded-full bg-primary/8 animate-ping" style={{ animationDuration: '3s' }} />

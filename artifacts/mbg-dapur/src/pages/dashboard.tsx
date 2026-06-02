@@ -2,6 +2,7 @@ import React from "react";
 import { 
   useGetDashboardSummary, 
   useGetDashboardTrends,
+  useGetMe,
 } from "@workspace/api-client-react";
 import { 
   Utensils, 
@@ -25,6 +26,9 @@ export default function Dashboard() {
   const qc = useQueryClient();
   const { data: summary, isLoading: isLoadingSummary, isFetching } = useGetDashboardSummary();
   const { data: trends, isLoading: isLoadingTrends } = useGetDashboardTrends();
+  const { data: me } = useGetMe();
+  const hour = new Date().getHours();
+  const greeting = hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["/api/dashboard/summary"] });
@@ -111,7 +115,9 @@ export default function Dashboard() {
               Live
             </span>
           </div>
-          <p className="page-subheading">Ringkasan harian performa dapur MBG nasional.</p>
+          <p className="page-subheading">
+            {greeting}, <span className="font-semibold text-foreground">{me?.nama ?? "—"}</span> — ringkasan harian performa dapur MBG nasional.
+          </p>
         </div>
         <Button
           variant="outline"
@@ -144,7 +150,7 @@ export default function Dashboard() {
               {isLoadingSummary ? (
                 <Skeleton className="h-9 w-20 mb-1.5" />
               ) : (
-                <div className={`text-3xl font-bold tracking-tight animate-count-up tabular-nums ${card.valueClass}`}>
+                <div className={`text-2xl sm:text-3xl font-bold tracking-tight animate-count-up tabular-nums ${card.valueClass}`}>
                   {card.value !== undefined && card.value !== null
                     ? Number(card.value).toLocaleString('id-ID')
                     : '—'}

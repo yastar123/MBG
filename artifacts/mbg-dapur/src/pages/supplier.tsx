@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, Plus, Pencil, Trash2, Phone, Mail, Star, Search } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Phone, Mail, Star, Search, CheckCircle2, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Supplier = {
@@ -107,14 +107,23 @@ export default function SupplierPage() {
       {!isLoading && data && data.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
           {[
-            { label: "Total Supplier", value: data.length, color: "text-foreground", bg: "bg-muted/50" },
-            { label: "Aktif", value: aktifCount, color: "text-primary", bg: "bg-primary/5 border border-primary/10" },
-            { label: "Nonaktif", value: data.length - aktifCount, color: "text-muted-foreground", bg: "bg-muted/50" },
+            { label: "Total Supplier", value: data.length, icon: Building2, iconBg: "bg-primary/10 text-primary", valueClass: "text-foreground", delay: "0s" },
+            { label: "Aktif", value: aktifCount, icon: CheckCircle2, iconBg: "bg-emerald-100 text-emerald-600", valueClass: "text-emerald-700", delay: "0.05s" },
+            { label: "Nonaktif", value: data.length - aktifCount, icon: MinusCircle, iconBg: "bg-muted text-muted-foreground", valueClass: "text-muted-foreground", delay: "0.1s" },
           ].map(stat => (
-            <div key={stat.label} className={`${stat.bg} rounded-xl p-4 text-center`}>
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-            </div>
+            <Card key={stat.label} className="shadow-sm animate-slide-up" style={{ animationDelay: stat.delay }}>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`stat-card-icon w-10 h-10 ${stat.iconBg}`}>
+                    <stat.icon size={17} />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold tabular-nums ${stat.valueClass}`}>{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

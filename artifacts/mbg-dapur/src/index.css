@@ -290,6 +290,25 @@
     @apply w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-1;
   }
 
+  /* ── Content area background — subtle premium dot grid ── */
+  .content-area-bg {
+    background-image: radial-gradient(circle, hsl(var(--foreground) / 0.038) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* ── Stat card with colored left accent bar ── */
+  .stat-card-accent {
+    @apply relative overflow-hidden;
+  }
+  .stat-card-accent::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 3px;
+    background: var(--stat-accent-color, hsl(var(--primary)));
+    border-radius: 3px 0 0 3px;
+  }
+
   /* ── Interactive row ── */
   .row-interactive {
     @apply transition-colors duration-150 hover:bg-primary/4 cursor-default;
@@ -301,6 +320,11 @@
   }
   .input-premium:focus {
     box-shadow: 0 0 0 3px hsl(var(--ring) / 0.12), 0 1px 3px hsl(var(--foreground) / 0.06);
+  }
+
+  /* ── Card hover elevation ── */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-px cursor-default;
   }
 }
 

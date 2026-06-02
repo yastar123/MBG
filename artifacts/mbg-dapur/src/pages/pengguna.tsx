@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound } from "lucide-react";
+import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };
@@ -123,18 +123,25 @@ export default function PenggunaPage() {
 
       {!isLoading && data && data.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3 animate-slide-up">
-          <div className="bg-muted/50 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold">{data.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Total Pengguna</p>
-          </div>
-          <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{activeCount}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Aktif</p>
-          </div>
-          <div className="bg-muted/50 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-muted-foreground">{data.length - activeCount}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Nonaktif</p>
-          </div>
+          {[
+            { label: "Total Pengguna", value: data.length, icon: Users, iconBg: "bg-primary/10 text-primary", valueClass: "text-foreground", delay: "0s" },
+            { label: "Aktif", value: activeCount, icon: CheckCircle2, iconBg: "bg-emerald-100 text-emerald-600", valueClass: "text-emerald-700", delay: "0.05s" },
+            { label: "Nonaktif", value: data.length - activeCount, icon: MinusCircle, iconBg: "bg-muted text-muted-foreground", valueClass: "text-muted-foreground", delay: "0.1s" },
+          ].map(stat => (
+            <Card key={stat.label} className="shadow-sm animate-slide-up" style={{ animationDelay: stat.delay }}>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`stat-card-icon w-10 h-10 ${stat.iconBg}`}>
+                    <stat.icon size={17} />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold tabular-nums ${stat.valueClass}`}>{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 

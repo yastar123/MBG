@@ -121,7 +121,7 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background min-h-screen lg:min-h-0">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background min-h-screen lg:min-h-0 content-area-bg">
         <div className="w-full max-w-sm animate-scale-in">
           <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
             <div className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-md">
