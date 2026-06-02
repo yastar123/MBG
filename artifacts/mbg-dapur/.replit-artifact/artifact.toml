@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "MBG Dapur - Sistem Manajemen Operasional"
+version = "1.0.0"
+id = "artifacts/mbg-dapur"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25852
+
+[services.development]
+run = "pnpm --filter @workspace/mbg-dapur run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mbg-dapur", "run", "build" ]
+publicDir = "artifacts/mbg-dapur/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25852"
+BASE_PATH = "/"
