@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle, X } from "lucide-react";
+import { UserCircle, Plus, Pencil, Search, Users, ShieldCheck, ToggleLeft, ToggleRight, Trash2, KeyRound, CheckCircle2, MinusCircle, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type User = { id: number; nama: string; email: string; role: string; dapur_id: number | null; no_hp: string | null; is_active: boolean };
@@ -270,8 +270,8 @@ export default function PenggunaPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && deleteUser.mutate(delId)} disabled={deleteUser.isPending}>
-              {deleteUser.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delId && deleteUser.mutate(delId)} disabled={deleteUser.isPending} className="gap-2">
+              {deleteUser.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -335,8 +335,8 @@ export default function PenggunaPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password) || (!!editing && showChangePassword && !form.password)}>
-              {save.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.email || (!editing && !form.password) || (!!editing && showChangePassword && !form.password)} className="gap-2">
+              {save.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>

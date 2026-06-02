@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle2, ClipboardList, RefreshCw } from "lucide-react";
+import { Package, AlertTriangle, Plus, Pencil, Trash2, TrendingDown, CheckCircle2, ClipboardList, RefreshCw, Search, X, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +30,7 @@ export default function GudangPage() {
   const { data: penerimaan, isLoading: loadingPenerimaan } = useQuery<Penerimaan[]>({ queryKey: ["/api/penerimaan-bahan"], queryFn: async () => (await fetch("/api/penerimaan-bahan")).json() });
   const { data: supplierList } = useQuery<Supplier[]>({ queryKey: ["/api/supplier"], queryFn: async () => (await fetch("/api/supplier")).json() });
 
+  const [searchBahan, setSearchBahan] = useState("");
   const [openBahan, setOpenBahan] = useState(false);
   const [editBahan, setEditBahan] = useState<BahanBaku | null>(null);
   const [formBahan, setFormBahan] = useState(emptyBahan);
@@ -119,6 +120,11 @@ export default function GudangPage() {
   const alertItems = stok?.filter(s => s.kuantitas <= s.stok_minimum) ?? [];
   const hampirHabisItems = stok?.filter(s => s.kuantitas > s.stok_minimum && s.kuantitas <= s.stok_minimum * 1.5) ?? [];
   const amanItems = stok?.filter(s => s.kuantitas > s.stok_minimum * 1.5) ?? [];
+
+  const filteredBahan = useMemo(() => {
+    const q = searchBahan.toLowerCase();
+    return (bahan ?? []).filter(b => !q || b.nama.toLowerCase().includes(q) || (b.kategori ?? "").toLowerCase().includes(q) || b.satuan.toLowerCase().includes(q));
+  }, [bahan, searchBahan]);
 
   function openAddBahan() { setEditBahan(null); setFormBahan(emptyBahan); setOpenBahan(true); }
   function openEditBahan(b: BahanBaku) {
@@ -322,9 +328,30 @@ export default function GudangPage() {
         <TabsContent value="bahan">
           <Card className="shadow-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Daftar Bahan Baku</CardTitle>
-                <Button size="sm" onClick={openAddBahan} className="gap-1.5"><Plus size={14} /> Tambah</Button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  Daftar Bahan Baku
+                  <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {filteredBahan.length}
+                  </span>
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="relative max-w-xs w-full sm:w-48">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={13} />
+                    <Input
+                      placeholder="Cari bahan..."
+                      value={searchBahan}
+                      onChange={e => setSearchBahan(e.target.value)}
+                      className="pl-8 h-8 text-sm pr-7"
+                    />
+                    {searchBahan && (
+                      <button onClick={() => setSearchBahan("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <Button size="sm" onClick={openAddBahan} className="gap-1.5 shrink-0"><Plus size={14} /> Tambah</Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -343,6 +370,19 @@ export default function GudangPage() {
                   </div>
                   <Button size="sm" onClick={openAddBahan} className="gap-1.5 mt-1"><Plus size={14} />Tambah Bahan</Button>
                 </div>
+              ) : filteredBahan.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <Search size={22} className="text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground/70">Bahan tidak ditemukan</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">Tidak ada bahan yang cocok dengan "{searchBahan}"</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => setSearchBahan("")} className="gap-1.5 mt-1">
+                    <X size={13} />Hapus pencarian
+                  </Button>
+                </div>
               ) : (
                 <div className="table-responsive">
                   <table className="w-full text-sm">
@@ -356,7 +396,7 @@ export default function GudangPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(bahan ?? []).map(b => (
+                      {filteredBahan.map(b => (
                         <tr key={b.id} className="border-b hover:bg-muted/30 transition-colors">
                           <td className="py-3 px-4 font-medium">{b.nama}</td>
                           <td className="py-3 px-4 hidden sm:table-cell text-muted-foreground">{b.satuan}</td>
@@ -478,8 +518,8 @@ export default function GudangPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenBahan(false)}>Batal</Button>
-            <Button onClick={() => saveBahan.mutate()} disabled={saveBahan.isPending || !formBahan.nama || !formBahan.satuan}>
-              {saveBahan.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => saveBahan.mutate()} disabled={saveBahan.isPending || !formBahan.nama || !formBahan.satuan} className="gap-2">
+              {saveBahan.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -525,8 +565,9 @@ export default function GudangPage() {
             <Button
               onClick={() => updateStok.mutate()}
               disabled={updateStok.isPending || stokUpdateValue === "" || isNaN(parseFloat(stokUpdateValue))}
+              className="gap-2"
             >
-              {updateStok.isPending ? "Menyimpan..." : "Simpan"}
+              {updateStok.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -542,8 +583,8 @@ export default function GudangPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelBahanId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delBahanId && delBahan.mutate(delBahanId)} disabled={delBahan.isPending}>
-              {delBahan.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delBahanId && delBahan.mutate(delBahanId)} disabled={delBahan.isPending} className="gap-2">
+              {delBahan.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -594,8 +635,8 @@ export default function GudangPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenPenerimaan(false)}>Batal</Button>
-            <Button onClick={() => savePenerimaan.mutate()} disabled={savePenerimaan.isPending || !formPenerimaan.supplier_id}>
-              {savePenerimaan.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => savePenerimaan.mutate()} disabled={savePenerimaan.isPending || !formPenerimaan.supplier_id} className="gap-2">
+              {savePenerimaan.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>

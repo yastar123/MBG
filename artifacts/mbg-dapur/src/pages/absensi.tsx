@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarCheck, Plus, CheckCircle, XCircle, Clock, Search, Users, Pencil, Trash2, Filter, X } from "lucide-react";
+import { CalendarCheck, Plus, CheckCircle, XCircle, Clock, Search, Users, Pencil, Trash2, Filter, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -339,8 +339,8 @@ export default function AbsensiPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.user_id || !form.dapur_id}>
-              {save.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.user_id || !form.dapur_id} className="gap-2">
+              {save.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -359,8 +359,8 @@ export default function AbsensiPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>
-              {del.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending} className="gap-2">
+              {del.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

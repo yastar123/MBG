@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Plus, Pencil, Trash2, Search, GraduationCap, School, X } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Search, GraduationCap, School, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -271,8 +271,8 @@ export default function PenerimaManfaatPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.sekolah}>
-              {save.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.sekolah} className="gap-2">
+              {save.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -286,8 +286,8 @@ export default function PenerimaManfaatPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>
-              {del.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending} className="gap-2">
+              {del.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

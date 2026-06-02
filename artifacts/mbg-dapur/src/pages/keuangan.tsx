@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wallet, TrendingUp, Plus, PiggyBank, ReceiptText, Pencil, Trash2 } from "lucide-react";
+import { Wallet, TrendingUp, Plus, PiggyBank, ReceiptText, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -398,8 +398,8 @@ export default function KeuanganPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAnggaran(false)}>Batal</Button>
-            <Button onClick={() => saveAnggaran.mutate()} disabled={saveAnggaran.isPending || !formAnggaran.dapur_id || !formAnggaran.total_anggaran}>
-              {saveAnggaran.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => saveAnggaran.mutate()} disabled={saveAnggaran.isPending || !formAnggaran.dapur_id || !formAnggaran.total_anggaran} className="gap-2">
+              {saveAnggaran.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -418,8 +418,8 @@ export default function KeuanganPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelAnggaranId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delAnggaranId && deleteAnggaran.mutate(delAnggaranId)} disabled={deleteAnggaran.isPending}>
-              {deleteAnggaran.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delAnggaranId && deleteAnggaran.mutate(delAnggaranId)} disabled={deleteAnggaran.isPending} className="gap-2">
+              {deleteAnggaran.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -464,8 +464,8 @@ export default function KeuanganPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenRealisasi(false)}>Batal</Button>
-            <Button onClick={() => saveRealisasi.mutate()} disabled={saveRealisasi.isPending || !formRealisasi.dapur_id || !formRealisasi.jumlah}>
-              {saveRealisasi.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => saveRealisasi.mutate()} disabled={saveRealisasi.isPending || !formRealisasi.dapur_id || !formRealisasi.jumlah} className="gap-2">
+              {saveRealisasi.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -484,8 +484,8 @@ export default function KeuanganPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelRealisasiId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delRealisasiId && deleteRealisasi.mutate(delRealisasiId)} disabled={deleteRealisasi.isPending}>
-              {deleteRealisasi.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delRealisasiId && deleteRealisasi.mutate(delRealisasiId)} disabled={deleteRealisasi.isPending} className="gap-2">
+              {deleteRealisasi.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, Plus, Pencil, Trash2, Phone, Mail, Star, Search, CheckCircle2, MinusCircle, X } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Phone, Mail, Star, Search, CheckCircle2, MinusCircle, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Supplier = {
@@ -266,8 +266,8 @@ export default function SupplierPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.kontak}>
-              {save.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama || !form.kontak} className="gap-2">
+              {save.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -281,8 +281,8 @@ export default function SupplierPage() {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>
-              {del.isPending ? "Menghapus..." : "Hapus"}
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending} className="gap-2">
+              {del.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

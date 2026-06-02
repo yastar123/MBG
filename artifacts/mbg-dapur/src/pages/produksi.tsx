@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Utensils, Plus, Pencil, TrendingUp, TrendingDown, CalendarDays, Target, Search, Filter, X } from "lucide-react";
+import { Utensils, Plus, Pencil, TrendingUp, TrendingDown, CalendarDays, Target, Search, Filter, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
@@ -359,8 +359,8 @@ export default function ProduksiPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAdd(false)}>Batal</Button>
-            <Button onClick={() => create.mutate()} disabled={create.isPending || !addForm.dapur_id || !addForm.menu_id || !addForm.target_porsi}>
-              {create.isPending ? "Menyimpan..." : "Jadwalkan"}
+            <Button onClick={() => create.mutate()} disabled={create.isPending || !addForm.dapur_id || !addForm.menu_id || !addForm.target_porsi} className="gap-2">
+              {create.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Jadwalkan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -436,7 +436,9 @@ export default function ProduksiPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditItem(null)}>Batal</Button>
-            <Button onClick={() => update.mutate()} disabled={update.isPending}>{update.isPending ? "Menyimpan..." : "Simpan"}</Button>
+            <Button onClick={() => update.mutate()} disabled={update.isPending} className="gap-2">
+              {update.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

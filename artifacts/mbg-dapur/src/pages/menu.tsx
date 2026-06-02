@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UtensilsCrossed, Plus, Pencil, Trash2, Flame, CalendarDays, Search, X } from "lucide-react";
+import { UtensilsCrossed, Plus, Pencil, Trash2, Flame, CalendarDays, Search, X, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
@@ -151,13 +151,27 @@ export default function MenuPage() {
           </CardHeader>
           <CardContent className="p-0">
             {allMenu.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center">
+              <div className="empty-state">
+                <div className="empty-state-icon">
                   <UtensilsCrossed size={22} className="text-muted-foreground" />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {search ? "Menu tidak ditemukan" : "Belum ada menu yang ditambahkan"}
-                </p>
+                <div>
+                  <p className="text-sm font-semibold text-foreground/70">
+                    {search ? "Menu tidak ditemukan" : "Belum ada menu yang ditambahkan"}
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">
+                    {search ? `Tidak ada menu yang cocok dengan "${search}"` : "Mulai dengan menambahkan menu pertama"}
+                  </p>
+                </div>
+                {search ? (
+                  <Button size="sm" variant="outline" onClick={() => setSearch("")} className="gap-1.5 mt-1">
+                    <X size={13} />Hapus pencarian
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={openAdd} className="gap-1.5 mt-1">
+                    <Plus size={14} />Tambah Menu
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="table-responsive">
@@ -245,7 +259,9 @@ export default function MenuPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama}>{save.isPending ? "Menyimpan..." : "Simpan"}</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending || !form.nama} className="gap-2">
+              {save.isPending ? <><Loader2 size={14} className="animate-spin" />Menyimpan...</> : "Simpan"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -256,7 +272,9 @@ export default function MenuPage() {
           <p className="text-sm text-muted-foreground">Yakin ingin menghapus menu <span className="font-semibold text-foreground">{(data ?? []).find(m => m.id === delId)?.nama}</span>?</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDelId(null)}>Batal</Button>
-            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending}>{del.isPending ? "Menghapus..." : "Hapus"}</Button>
+            <Button variant="destructive" onClick={() => delId && del.mutate(delId)} disabled={del.isPending} className="gap-2">
+              {del.isPending ? <><Loader2 size={14} className="animate-spin" />Menghapus...</> : "Hapus"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
