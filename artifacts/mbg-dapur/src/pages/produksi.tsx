@@ -46,6 +46,7 @@ export default function ProduksiPage() {
   const [search, setSearch] = useState("");
   const [filterTanggal, setFilterTanggal] = useState(today);
   const [showAllDates, setShowAllDates] = useState(false);
+  const [showAllRows, setShowAllRows] = useState(false);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -254,7 +255,7 @@ export default function ProduksiPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.slice(0, 50).map(p => {
+                    {(showAllRows ? filtered : filtered.slice(0, 50)).map(p => {
                       const pct = p.target_porsi > 0 && p.realisasi_porsi != null
                         ? Math.round((p.realisasi_porsi / p.target_porsi) * 100)
                         : null;
@@ -297,7 +298,17 @@ export default function ProduksiPage() {
                 </table>
                 {filtered.length > 50 && (
                   <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
-                    <span className="text-xs text-muted-foreground">Menampilkan 50 dari {filtered.length} data — gunakan filter untuk mempersempit hasil</span>
+                    {showAllRows ? (
+                      <>
+                        <span className="text-xs text-muted-foreground">Menampilkan semua {filtered.length} data</span>
+                        <button onClick={() => setShowAllRows(false)} className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors">Ringkas</button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xs text-muted-foreground">Menampilkan 50 dari {filtered.length} data</span>
+                        <button onClick={() => setShowAllRows(true)} className="text-xs text-primary font-semibold hover:underline transition-colors">Tampilkan semua</button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -212,7 +212,7 @@ function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in">
+        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in">
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
             <div>
               <p className="font-semibold text-sm">Notifikasi</p>

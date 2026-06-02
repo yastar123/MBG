@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Utensils, Loader2, Sparkles, ChefHat, Truck, BarChart3, ArrowRight } from "lucide-react";
+import { Utensils, Loader2, Sparkles, ChefHat, Truck, BarChart3, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useLogin } from "@workspace/api-client-react";
 import { setToken } from "@/lib/auth";
 
@@ -27,6 +27,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const login = useLogin();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -165,13 +166,23 @@ export default function Login() {
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Password</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="••••••••"
-                        type="password"
-                        autoComplete="current-password"
-                        {...field}
-                        className="h-11 bg-muted/40 border-border/60 focus:bg-background transition-all duration-200 focus:ring-2 focus:ring-ring/20"
-                      />
+                      <div className="relative">
+                        <Input
+                          placeholder="Masukkan kata sandi"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          {...field}
+                          className="h-11 bg-muted/40 border-border/60 focus:bg-background transition-all duration-200 focus:ring-2 focus:ring-ring/20 pr-11"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(v => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                          aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -27,6 +27,7 @@ export default function PenerimaManfaatPage() {
   const [editing, setEditing] = useState<PenerimaManfaat | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [delId, setDelId] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -106,24 +107,38 @@ export default function PenerimaManfaatPage() {
             <CardTitle className="text-base">Distribusi per Wilayah</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={75}
-                    innerRadius={35}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    labelLine={true}
-                  >
-                    {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => [`${v} siswa`, "Total"]} contentStyle={{ borderRadius: '10px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="h-[180px] w-full sm:w-[220px] shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={72}
+                      innerRadius={32}
+                      dataKey="value"
+                      strokeWidth={2}
+                    >
+                      {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [`${v} siswa`, "Total"]} contentStyle={{ borderRadius: '10px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-wrap sm:flex-col gap-2 sm:gap-1.5 w-full">
+                {pieData.map((entry, i) => {
+                  const total = pieData.reduce((s, x) => s + x.value, 0);
+                  const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                  return (
+                    <div key={entry.name} className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
+                      <span className="text-xs font-semibold text-foreground ml-auto pl-2 shrink-0">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -157,41 +172,58 @@ export default function PenerimaManfaatPage() {
               {!search && <Button size="sm" onClick={openAdd} className="gap-1.5"><Plus size={14} />Tambah Penerima</Button>}
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/20">
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Nama</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Sekolah</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Kelas</th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden lg:table-cell">Wilayah</th>
-                    <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
-                    <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(p => (
-                    <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4 font-medium">{p.nama}</td>
-                      <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{p.sekolah}</td>
-                      <td className="py-3 px-4 hidden md:table-cell text-sm">{p.kelas}</td>
-                      <td className="py-3 px-4 hidden lg:table-cell text-sm">{p.wilayah}</td>
-                      <td className="py-3 px-4 text-center">
-                        <Badge variant={p.is_aktif ? "default" : "secondary"} className="text-xs">
-                          {p.is_aktif ? "Aktif" : "Nonaktif"}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(p)}><Pencil size={13} /></Button>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(p.id)}><Trash2 size={13} /></Button>
-                        </div>
-                      </td>
+            <>
+              <div className="table-responsive">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/20">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs">Nama</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden sm:table-cell">Sekolah</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden md:table-cell">Kelas</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs hidden lg:table-cell">Wilayah</th>
+                      <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Status</th>
+                      <th className="text-center py-3 px-4 font-medium text-muted-foreground text-xs">Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {(showAll ? filtered : filtered.slice(0, 50)).map(p => (
+                      <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4 font-medium">{p.nama}</td>
+                        <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell text-sm">{p.sekolah}</td>
+                        <td className="py-3 px-4 hidden md:table-cell text-sm">{p.kelas}</td>
+                        <td className="py-3 px-4 hidden lg:table-cell text-sm">{p.wilayah}</td>
+                        <td className="py-3 px-4 text-center">
+                          <Badge variant={p.is_aktif ? "default" : "secondary"} className="text-xs">
+                            {p.is_aktif ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(p)}><Pencil size={13} /></Button>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDelId(p.id)}><Trash2 size={13} /></Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {filtered.length > 50 && (
+                <div className="px-4 py-3 flex items-center justify-between border-t bg-muted/10">
+                  {showAll ? (
+                    <>
+                      <span className="text-xs text-muted-foreground">Menampilkan semua {filtered.length} penerima</span>
+                      <button onClick={() => setShowAll(false)} className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors">Ringkas</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs text-muted-foreground">Menampilkan 50 dari {filtered.length} penerima</span>
+                      <button onClick={() => setShowAll(true)} className="text-xs text-primary font-semibold hover:underline transition-colors">Tampilkan semua</button>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
