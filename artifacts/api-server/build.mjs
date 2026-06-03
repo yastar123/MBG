@@ -135,7 +135,6 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
     external: [
-      "express",
       "*.node",
       "sharp",
       "better-sqlite3",
