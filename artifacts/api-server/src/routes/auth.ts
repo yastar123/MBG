@@ -7,33 +7,42 @@ import bcrypt from "bcryptjs";
 const router = Router();
 
 router.post("/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    res.status(400).json({ error: "Email dan password wajib diisi" });
-    return;
-  }
-  const user = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email))
-    .limit(1);
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: "Email dan password wajib diisi" });
+      return;
+    }
+    const user = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
 
-  if (!user[0]) {
-    res.status(401).json({ error: "Email atau password salah" });
-    return;
+    if (!user[0]) {
+      res.status(401).json({ error: "Email atau password salah" });
+      return;
+    }
+    if (!user[0].is_active) {
+      res.status(401).json({ error: "Akun tidak aktif" });
+      return;
+    }
+    const passwordMatch = await bcrypt.compare(password, user[0].password_hash);
+    if (!passwordMatch) {
+      res.status(401).json({ error: "Email atau password salah" });
+      return;
+    }
+    const token = makeToken(user[0].id, user[0].role);
+    const { password_hash, ...safeUser } = user[0];
+    res.json({ token, user: safeUser });
+  } catch (err: any) {
+    console.error("Login error:", err);
+    res.status(500).json({
+      error: "Internal server error",
+      detail: err?.message || String(err),
+      cause: err?.cause?.message || undefined,
+    });
   }
-  if (!user[0].is_active) {
-    res.status(401).json({ error: "Akun tidak aktif" });
-    return;
-  }
-  const passwordMatch = await bcrypt.compare(password, user[0].password_hash);
-  if (!passwordMatch) {
-    res.status(401).json({ error: "Email atau password salah" });
-    return;
-  }
-  const token = makeToken(user[0].id, user[0].role);
-  const { password_hash, ...safeUser } = user[0];
-  res.json({ token, user: safeUser });
 });
 
 router.get("/auth/me", authMiddleware, async (req: AuthRequest, res) => {
