@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { db, anggaranTable, realisasiTable, dapurTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+
+const VALID_KATEGORI = ["bahan_baku", "tenaga_kerja", "operasional", "distribusi", "lain_lain"];
 
 const router = Router();
 
@@ -25,6 +27,19 @@ router.post("/keuangan/anggaran", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const totalNum = parseFloat(total_anggaran);
+  if (isNaN(totalNum) || totalNum < 0) {
+    res.status(400).json({ error: "total_anggaran tidak boleh negatif" });
+    return;
+  }
+  // Check duplicate dapur+periode
+  const existing = await db.select().from(anggaranTable)
+    .where(and(eq(anggaranTable.dapur_id, parseInt(dapur_id)), eq(anggaranTable.periode, periode)))
+    .limit(1);
+  if (existing.length > 0) {
+    res.status(409).json({ error: "Anggaran untuk dapur dan periode ini sudah ada" });
+    return;
+  }
   const [a] = await db
     .insert(anggaranTable)
     .values({ dapur_id: parseInt(dapur_id), periode, total_anggaran: String(total_anggaran), anggaran_per_porsi: anggaran_per_porsi ? String(anggaran_per_porsi) : null })
@@ -35,9 +50,16 @@ router.post("/keuangan/anggaran", authMiddleware, async (req, res) => {
 router.patch("/keuangan/anggaran/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { total_anggaran, anggaran_per_porsi } = req.body;
+  if (total_anggaran !== undefined) {
+    const totalNum = parseFloat(total_anggaran);
+    if (isNaN(totalNum) || totalNum < 0) {
+      res.status(400).json({ error: "total_anggaran tidak boleh negatif" });
+      return;
+    }
+  }
   const [a] = await db
     .update(anggaranTable)
-    .set({ total_anggaran: total_anggaran ? String(total_anggaran) : undefined, anggaran_per_porsi: anggaran_per_porsi ? String(anggaran_per_porsi) : undefined })
+    .set({ total_anggaran: total_anggaran !== undefined ? String(total_anggaran) : undefined, anggaran_per_porsi: anggaran_per_porsi ? String(anggaran_per_porsi) : undefined })
     .where(eq(anggaranTable.id, id))
     .returning();
   if (!a) { res.status(404).json({ error: "Anggaran tidak ditemukan" }); return; }
@@ -66,6 +88,11 @@ router.post("/keuangan/realisasi", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const jumlahNum = parseFloat(jumlah);
+  if (isNaN(jumlahNum) || jumlahNum < 0) {
+    res.status(400).json({ error: "jumlah tidak boleh negatif" });
+    return;
+  }
   const [r] = await db
     .insert(realisasiTable)
     .values({ dapur_id: parseInt(dapur_id), tanggal, kategori, jumlah: String(jumlah), deskripsi })
@@ -76,9 +103,16 @@ router.post("/keuangan/realisasi", authMiddleware, async (req, res) => {
 router.patch("/keuangan/realisasi/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { kategori, jumlah, deskripsi } = req.body;
+  if (jumlah !== undefined) {
+    const jumlahNum = parseFloat(jumlah);
+    if (isNaN(jumlahNum) || jumlahNum < 0) {
+      res.status(400).json({ error: "jumlah tidak boleh negatif" });
+      return;
+    }
+  }
   const [r] = await db
     .update(realisasiTable)
-    .set({ kategori, jumlah: jumlah ? String(jumlah) : undefined, deskripsi })
+    .set({ kategori, jumlah: jumlah !== undefined ? String(jumlah) : undefined, deskripsi })
     .where(eq(realisasiTable.id, id))
     .returning();
   if (!r) { res.status(404).json({ error: "Realisasi tidak ditemukan" }); return; }

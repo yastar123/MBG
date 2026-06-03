@@ -1,8 +1,13 @@
 import { Router } from "express";
 import { db, usersTable, dapurTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import bcrypt from "bcryptjs";
+
+const VALID_ROLES = [
+  "super_admin", "admin", "kepala_dapur", "staff_dapur", "driver",
+  "petugas_gudang", "petugas_distribusi", "petugas_absensi", "keuangan", "supervisor",
+];
 
 const router = Router();
 
@@ -38,13 +43,26 @@ router.post("/users", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
-  const hashed = await bcrypt.hash(password, 10);
-  const [user] = await db
-    .insert(usersTable)
-    .values({ nama, email, password_hash: hashed, role, dapur_id: dapur_id ?? null, no_hp: no_hp ?? null })
-    .returning();
-  const { password_hash, ...safeUser } = user;
-  res.status(201).json({ ...safeUser, dapur_nama: null });
+  if (!VALID_ROLES.includes(role)) {
+    res.status(400).json({ error: `Role tidak valid. Pilihan: ${VALID_ROLES.join(", ")}` });
+    return;
+  }
+  try {
+    const hashed = await bcrypt.hash(password, 10);
+    const [user] = await db
+      .insert(usersTable)
+      .values({ nama, email, password_hash: hashed, role, dapur_id: dapur_id ?? null, no_hp: no_hp ?? null })
+      .returning();
+    const { password_hash, ...safeUser } = user;
+    res.status(201).json({ ...safeUser, dapur_nama: null });
+  } catch (err: unknown) {
+    const pgErr = err as { code?: string };
+    if (pgErr?.code === "23505") {
+      res.status(409).json({ error: "Email sudah terdaftar" });
+      return;
+    }
+    throw err;
+  }
 });
 
 router.get("/users/:id", authMiddleware, async (req, res) => {
@@ -59,6 +77,10 @@ router.get("/users/:id", authMiddleware, async (req, res) => {
 router.patch("/users/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { nama, email, role, dapur_id, no_hp, is_active, password } = req.body;
+  if (role !== undefined && !VALID_ROLES.includes(role)) {
+    res.status(400).json({ error: `Role tidak valid. Pilihan: ${VALID_ROLES.join(", ")}` });
+    return;
+  }
   const updateData: Record<string, unknown> = {};
   if (nama !== undefined) updateData.nama = nama;
   if (email !== undefined) updateData.email = email;
@@ -67,14 +89,23 @@ router.patch("/users/:id", authMiddleware, async (req, res) => {
   if (no_hp !== undefined) updateData.no_hp = no_hp;
   if (is_active !== undefined) updateData.is_active = is_active;
   if (password) updateData.password_hash = await bcrypt.hash(password, 10);
-  const [user] = await db
-    .update(usersTable)
-    .set(updateData)
-    .where(eq(usersTable.id, id))
-    .returning();
-  if (!user) { res.status(404).json({ error: "User tidak ditemukan" }); return; }
-  const { password_hash, ...safeUser } = user;
-  res.json({ ...safeUser, dapur_nama: null });
+  try {
+    const [user] = await db
+      .update(usersTable)
+      .set(updateData)
+      .where(eq(usersTable.id, id))
+      .returning();
+    if (!user) { res.status(404).json({ error: "User tidak ditemukan" }); return; }
+    const { password_hash, ...safeUser } = user;
+    res.json({ ...safeUser, dapur_nama: null });
+  } catch (err: unknown) {
+    const pgErr = err as { code?: string };
+    if (pgErr?.code === "23505") {
+      res.status(409).json({ error: "Email sudah terdaftar" });
+      return;
+    }
+    throw err;
+  }
 });
 
 router.delete("/users/:id", authMiddleware, async (req, res) => {

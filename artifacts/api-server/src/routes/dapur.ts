@@ -17,13 +17,18 @@ router.get("/dapur", authMiddleware, async (_req, res) => {
 
 router.post("/dapur", authMiddleware, async (req, res) => {
   const { nama, lokasi, alamat, kapasitas_porsi, kepala_dapur_id, status } = req.body;
-  if (!nama || !lokasi || !kapasitas_porsi) {
+  if (!nama || !lokasi || kapasitas_porsi === undefined) {
     res.status(400).json({ error: "Data tidak lengkap" });
+    return;
+  }
+  const kapasitas = parseInt(kapasitas_porsi);
+  if (isNaN(kapasitas) || kapasitas < 0) {
+    res.status(400).json({ error: "kapasitas_porsi harus berupa angka positif" });
     return;
   }
   const [dapur] = await db
     .insert(dapurTable)
-    .values({ nama, lokasi, alamat, kapasitas_porsi: parseInt(kapasitas_porsi), kepala_dapur_id: kepala_dapur_id ?? null, status: status ?? "aktif" })
+    .values({ nama, lokasi, alamat, kapasitas_porsi: kapasitas, kepala_dapur_id: kepala_dapur_id ?? null, status: status ?? "aktif" })
     .returning();
   res.status(201).json({ ...dapur, kepala_dapur_nama: null });
 });
@@ -39,9 +44,23 @@ router.get("/dapur/:id", authMiddleware, async (req, res) => {
 router.patch("/dapur/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { nama, lokasi, alamat, kapasitas_porsi, kepala_dapur_id, status } = req.body;
+  if (kapasitas_porsi !== undefined) {
+    const kapasitas = parseInt(kapasitas_porsi);
+    if (isNaN(kapasitas) || kapasitas < 0) {
+      res.status(400).json({ error: "kapasitas_porsi harus berupa angka positif" });
+      return;
+    }
+  }
   const [dapur] = await db
     .update(dapurTable)
-    .set({ nama, lokasi, alamat, kapasitas_porsi: kapasitas_porsi ? parseInt(kapasitas_porsi) : undefined, kepala_dapur_id, status })
+    .set({
+      nama,
+      lokasi,
+      alamat,
+      kapasitas_porsi: kapasitas_porsi !== undefined ? parseInt(kapasitas_porsi) : undefined,
+      kepala_dapur_id,
+      status,
+    })
     .where(eq(dapurTable.id, id))
     .returning();
   if (!dapur) { res.status(404).json({ error: "Dapur tidak ditemukan" }); return; }

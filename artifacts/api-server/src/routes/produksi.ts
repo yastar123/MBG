@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { db, produksiTable, dapurTable, menuTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+
+const VALID_STATUS = ["dijadwalkan", "berlangsung", "selesai", "qc_lulus", "qc_gagal"];
 
 const router = Router();
 
@@ -46,9 +48,26 @@ router.post("/produksi", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const targetNum = parseInt(target_porsi);
+  if (isNaN(targetNum) || targetNum < 0) {
+    res.status(400).json({ error: "target_porsi harus berupa angka non-negatif" });
+    return;
+  }
+  // Validate dapur exists
+  const [dapurExist] = await db.select().from(dapurTable).where(eq(dapurTable.id, parseInt(dapur_id))).limit(1);
+  if (!dapurExist) {
+    res.status(404).json({ error: "Dapur tidak ditemukan" });
+    return;
+  }
+  // Validate menu exists
+  const [menuExist] = await db.select().from(menuTable).where(eq(menuTable.id, parseInt(menu_id))).limit(1);
+  if (!menuExist) {
+    res.status(404).json({ error: "Menu tidak ditemukan" });
+    return;
+  }
   const [p] = await db
     .insert(produksiTable)
-    .values({ dapur_id: parseInt(dapur_id), menu_id: parseInt(menu_id), tanggal, target_porsi: parseInt(target_porsi) })
+    .values({ dapur_id: parseInt(dapur_id), menu_id: parseInt(menu_id), tanggal, target_porsi: targetNum })
     .returning();
   res.status(201).json({ ...p, dapur_nama: null, menu_nama: null });
 });
@@ -65,9 +84,13 @@ router.get("/produksi/:id", authMiddleware, async (req, res) => {
 router.patch("/produksi/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { realisasi_porsi, status, catatan_qc } = req.body;
+  if (status !== undefined && !VALID_STATUS.includes(status)) {
+    res.status(400).json({ error: `Status tidak valid. Pilihan: ${VALID_STATUS.join(", ")}` });
+    return;
+  }
   const [p] = await db
     .update(produksiTable)
-    .set({ realisasi_porsi: realisasi_porsi ? parseInt(realisasi_porsi) : undefined, status, catatan_qc })
+    .set({ realisasi_porsi: realisasi_porsi !== undefined ? parseInt(realisasi_porsi) : undefined, status, catatan_qc })
     .where(eq(produksiTable.id, id))
     .returning();
   if (!p) { res.status(404).json({ error: "Produksi tidak ditemukan" }); return; }

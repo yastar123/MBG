@@ -33,9 +33,24 @@ router.get("/supplier/:id", authMiddleware, async (req, res) => {
 router.patch("/supplier/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { nama, kontak, email, alamat, kategori_bahan, rating, status } = req.body;
+  if (rating !== undefined && rating !== null) {
+    const ratingNum = parseFloat(rating);
+    if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
+      res.status(400).json({ error: "Rating harus antara 0 dan 5" });
+      return;
+    }
+  }
   const [s] = await db
     .update(supplierTable)
-    .set({ nama, kontak, email, alamat, kategori_bahan, rating: rating ? String(rating) : undefined, status })
+    .set({
+      nama,
+      kontak,
+      email,
+      alamat,
+      kategori_bahan,
+      rating: rating !== undefined && rating !== null ? String(rating) : undefined,
+      status,
+    })
     .where(eq(supplierTable.id, id))
     .returning();
   if (!s) { res.status(404).json({ error: "Supplier tidak ditemukan" }); return; }

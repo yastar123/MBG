@@ -3,6 +3,10 @@ import { db, pengirimanTable, dapurTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 
+const VALID_STATUS = ["dijadwalkan", "berangkat", "tiba", "selesai", "gagal"];
+// Terminal statuses — cannot be changed once reached
+const TERMINAL_STATUS = ["selesai", "gagal"];
+
 const router = Router();
 
 router.get("/pengiriman/status-summary", authMiddleware, async (_req, res) => {
@@ -39,9 +43,20 @@ router.post("/pengiriman", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const porsiNum = parseInt(jumlah_porsi);
+  if (isNaN(porsiNum) || porsiNum <= 0) {
+    res.status(400).json({ error: "jumlah_porsi harus berupa angka positif" });
+    return;
+  }
+  // Validate dapur exists
+  const [dapurExist] = await db.select().from(dapurTable).where(eq(dapurTable.id, parseInt(dapur_id))).limit(1);
+  if (!dapurExist) {
+    res.status(404).json({ error: "Dapur tidak ditemukan" });
+    return;
+  }
   const [p] = await db
     .insert(pengirimanTable)
-    .values({ dapur_id: parseInt(dapur_id), driver_id: driver_id ? parseInt(driver_id) : null, tanggal, jumlah_porsi: parseInt(jumlah_porsi), tujuan, catatan })
+    .values({ dapur_id: parseInt(dapur_id), driver_id: driver_id ? parseInt(driver_id) : null, tanggal, jumlah_porsi: porsiNum, tujuan, catatan })
     .returning();
   res.status(201).json({ ...p, dapur_nama: null, driver_nama: null });
 });
@@ -58,6 +73,31 @@ router.get("/pengiriman/:id", authMiddleware, async (req, res) => {
 router.patch("/pengiriman/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { dapur_id, driver_id, status, catatan, jumlah_porsi, tujuan, tanggal } = req.body;
+
+  // Validate status value
+  if (status !== undefined && !VALID_STATUS.includes(status)) {
+    res.status(400).json({ error: `Status tidak valid. Pilihan: ${VALID_STATUS.join(", ")}` });
+    return;
+  }
+
+  // Check status machine: fetch current record
+  if (status !== undefined) {
+    const [current] = await db.select().from(pengirimanTable).where(eq(pengirimanTable.id, id)).limit(1);
+    if (!current) { res.status(404).json({ error: "Pengiriman tidak ditemukan" }); return; }
+    if (TERMINAL_STATUS.includes(current.status)) {
+      res.status(400).json({ error: `Pengiriman sudah ${current.status}, status tidak dapat diubah lagi` });
+      return;
+    }
+  }
+
+  if (jumlah_porsi !== undefined) {
+    const porsiNum = parseInt(jumlah_porsi);
+    if (isNaN(porsiNum) || porsiNum <= 0) {
+      res.status(400).json({ error: "jumlah_porsi harus berupa angka positif" });
+      return;
+    }
+  }
+
   const updateData: Record<string, unknown> = {};
   if (dapur_id !== undefined) updateData.dapur_id = parseInt(dapur_id);
   if (driver_id !== undefined) updateData.driver_id = driver_id ? parseInt(driver_id) : null;

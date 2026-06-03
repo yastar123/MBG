@@ -47,12 +47,18 @@ router.post("/verifikasi-penerimaan", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  // Validate penerima manfaat exists
+  const [pmExist] = await db.select().from(penerimaManfaatTable)
+    .where(eq(penerimaManfaatTable.id, parseInt(penerima_manfaat_id))).limit(1);
+  if (!pmExist) {
+    res.status(404).json({ error: "Penerima manfaat tidak ditemukan" });
+    return;
+  }
   const [v] = await db
     .insert(verifikasiPenerimaanTable)
     .values({ penerima_manfaat_id: parseInt(penerima_manfaat_id), tanggal, status, catatan })
     .returning();
-  const [pm] = await db.select().from(penerimaManfaatTable).where(eq(penerimaManfaatTable.id, parseInt(penerima_manfaat_id))).limit(1);
-  res.status(201).json({ ...v, penerima_nama: pm?.nama ?? null });
+  res.status(201).json({ ...v, penerima_nama: pmExist.nama });
 });
 
 router.get("/verifikasi-penerimaan/summary", authMiddleware, async (_req, res) => {

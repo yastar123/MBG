@@ -3,6 +3,8 @@ import { db, absensiTable, dapurTable, usersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 
+const VALID_STATUS = ["hadir", "tidak_hadir", "sakit", "izin"];
+
 const router = Router();
 
 router.get("/absensi", authMiddleware, async (req, res) => {
@@ -25,6 +27,16 @@ router.post("/absensi", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  if (!VALID_STATUS.includes(status)) {
+    res.status(400).json({ error: `Status tidak valid. Pilihan: ${VALID_STATUS.join(", ")}` });
+    return;
+  }
+  // Validate user exists
+  const [userExist] = await db.select().from(usersTable).where(eq(usersTable.id, parseInt(user_id))).limit(1);
+  if (!userExist) {
+    res.status(404).json({ error: "User tidak ditemukan" });
+    return;
+  }
   // Prevent duplicate attendance for same user on same day
   const existing = await db.select().from(absensiTable)
     .where(and(
@@ -45,6 +57,10 @@ router.post("/absensi", authMiddleware, async (req, res) => {
 router.patch("/absensi/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { status, keterangan } = req.body;
+  if (status !== undefined && !VALID_STATUS.includes(status)) {
+    res.status(400).json({ error: `Status tidak valid. Pilihan: ${VALID_STATUS.join(", ")}` });
+    return;
+  }
   const [a] = await db
     .update(absensiTable)
     .set({ status, keterangan })

@@ -17,12 +17,17 @@ router.post("/bahan-baku", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const minNum = parseFloat(stok_minimum);
+  if (isNaN(minNum) || minNum < 0) {
+    res.status(400).json({ error: "stok_minimum tidak boleh negatif" });
+    return;
+  }
   const [b] = await db
     .insert(bahanBakuTable)
     .values({ nama, satuan, stok_minimum: String(stok_minimum), kategori })
     .returning();
 
-  // Auto-create stok record with kuantitas=0 so it appears in the stok tab immediately
+  // Auto-create stok record with kuantitas=0
   await db
     .insert(stokTable)
     .values({ bahan_baku_id: b.id, kuantitas: "0" })
@@ -34,9 +39,16 @@ router.post("/bahan-baku", authMiddleware, async (req, res) => {
 router.patch("/bahan-baku/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { nama, satuan, stok_minimum, kategori } = req.body;
+  if (stok_minimum !== undefined) {
+    const minNum = parseFloat(stok_minimum);
+    if (isNaN(minNum) || minNum < 0) {
+      res.status(400).json({ error: "stok_minimum tidak boleh negatif" });
+      return;
+    }
+  }
   const [b] = await db
     .update(bahanBakuTable)
-    .set({ nama, satuan, stok_minimum: stok_minimum ? String(stok_minimum) : undefined, kategori })
+    .set({ nama, satuan, stok_minimum: stok_minimum !== undefined ? String(stok_minimum) : undefined, kategori })
     .where(eq(bahanBakuTable.id, id))
     .returning();
   if (!b) { res.status(404).json({ error: "Bahan baku tidak ditemukan" }); return; }
@@ -45,7 +57,6 @@ router.patch("/bahan-baku/:id", authMiddleware, async (req, res) => {
 
 router.delete("/bahan-baku/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
-  // Also clean up stok record
   await db.delete(stokTable).where(eq(stokTable.bahan_baku_id, id));
   await db.delete(bahanBakuTable).where(eq(bahanBakuTable.id, id));
   res.status(204).end();
@@ -90,7 +101,7 @@ router.get("/stok", authMiddleware, async (req, res) => {
   res.json(result);
 });
 
-// Update stok level directly (e.g., manual stock adjustment)
+// Update stok level directly
 router.patch("/stok/:bahan_baku_id", authMiddleware, async (req, res) => {
   const bahan_baku_id = parseInt(req.params["bahan_baku_id"] as string);
   const { kuantitas } = req.body;
@@ -98,8 +109,12 @@ router.patch("/stok/:bahan_baku_id", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Kuantitas wajib diisi" });
     return;
   }
+  const kuantitasNum = parseFloat(kuantitas);
+  if (isNaN(kuantitasNum) || kuantitasNum < 0) {
+    res.status(400).json({ error: "Kuantitas tidak boleh negatif" });
+    return;
+  }
 
-  // Upsert: update if exists, insert if not
   const existing = await db.select().from(stokTable).where(eq(stokTable.bahan_baku_id, bahan_baku_id)).limit(1);
   if (existing.length > 0) {
     const [s] = await db
@@ -154,13 +169,17 @@ router.post("/penerimaan-bahan", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  // Validate supplier exists
+  const [supplierExist] = await db.select().from(supplierTable).where(eq(supplierTable.id, parseInt(supplier_id))).limit(1);
+  if (!supplierExist) {
+    res.status(404).json({ error: "Supplier tidak ditemukan" });
+    return;
+  }
   const [p] = await db
     .insert(penerimaanBahanTable)
     .values({ supplier_id: parseInt(supplier_id), tanggal, catatan, status: status ?? "pending" })
     .returning();
-
-  const supplier = await db.select().from(supplierTable).where(eq(supplierTable.id, parseInt(supplier_id))).limit(1);
-  res.status(201).json({ ...p, supplier_nama: supplier[0]?.nama ?? null });
+  res.status(201).json({ ...p, supplier_nama: supplierExist.nama });
 });
 
 // PENGELUARAN BAHAN

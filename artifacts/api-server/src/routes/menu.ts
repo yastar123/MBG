@@ -18,9 +18,21 @@ router.post("/menu", authMiddleware, async (req, res) => {
     res.status(400).json({ error: "Data tidak lengkap" });
     return;
   }
+  const targetNum = parseInt(target_porsi);
+  if (isNaN(targetNum) || targetNum <= 0) {
+    res.status(400).json({ error: "target_porsi harus berupa angka positif" });
+    return;
+  }
+  if (kalori !== undefined && kalori !== null) {
+    const kaloriNum = parseFloat(kalori);
+    if (isNaN(kaloriNum) || kaloriNum < 0) {
+      res.status(400).json({ error: "kalori tidak boleh negatif" });
+      return;
+    }
+  }
   const [menu] = await db
     .insert(menuTable)
-    .values({ nama, deskripsi, tanggal, kategori, target_porsi: parseInt(target_porsi), kalori: kalori ? String(kalori) : null })
+    .values({ nama, deskripsi, tanggal, kategori, target_porsi: targetNum, kalori: kalori !== undefined && kalori !== null ? String(kalori) : null })
     .returning();
   res.status(201).json({ ...menu, kalori: menu.kalori ? parseFloat(menu.kalori) : null });
 });
@@ -35,9 +47,30 @@ router.get("/menu/:id", authMiddleware, async (req, res) => {
 router.patch("/menu/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { nama, deskripsi, tanggal, kategori, target_porsi, kalori } = req.body;
+  if (target_porsi !== undefined) {
+    const targetNum = parseInt(target_porsi);
+    if (isNaN(targetNum) || targetNum <= 0) {
+      res.status(400).json({ error: "target_porsi harus berupa angka positif" });
+      return;
+    }
+  }
+  if (kalori !== undefined && kalori !== null) {
+    const kaloriNum = parseFloat(kalori);
+    if (isNaN(kaloriNum) || kaloriNum < 0) {
+      res.status(400).json({ error: "kalori tidak boleh negatif" });
+      return;
+    }
+  }
   const [menu] = await db
     .update(menuTable)
-    .set({ nama, deskripsi, tanggal, kategori, target_porsi: target_porsi ? parseInt(target_porsi) : undefined, kalori: kalori ? String(kalori) : undefined })
+    .set({
+      nama,
+      deskripsi,
+      tanggal,
+      kategori,
+      target_porsi: target_porsi !== undefined ? parseInt(target_porsi) : undefined,
+      kalori: kalori !== undefined ? String(kalori) : undefined,
+    })
     .where(eq(menuTable.id, id))
     .returning();
   if (!menu) { res.status(404).json({ error: "Menu tidak ditemukan" }); return; }
