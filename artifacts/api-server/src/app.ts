@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
+// Vercel deployment trigger comment
 const app: Express = express();
 
 app.use(
