@@ -4,6 +4,7 @@
 dist
 tmp
 /api
+!/api/index.mjs
 /api-tmp
 out-tsc
 *.tsbuildinfo
