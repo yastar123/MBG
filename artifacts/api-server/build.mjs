@@ -28,6 +28,7 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      "express",
       "*.node",
       "sharp",
       "better-sqlite3",
@@ -134,6 +135,7 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
     external: [
+      "express",
       "*.node",
       "sharp",
       "better-sqlite3",
@@ -163,16 +165,6 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   // Rename vercel-handler.mjs → index.mjs
   await rename(path.resolve(apiDir, "vercel-handler.mjs"), path.resolve(apiDir, "index.mjs"));
 
-  // --- Copy frontend build to root dist/ for Vercel static serving ---
-  const frontendDist = path.resolve(rootDir, "artifacts/mbg-dapur/dist/public");
-  const rootDist = path.resolve(rootDir, "dist");
-  try {
-    await rm(rootDist, { recursive: true, force: true });
-    await cp(frontendDist, rootDist, { recursive: true });
-    console.log("Copied frontend build to root dist/");
-  } catch (e) {
-    console.warn("Frontend dist not found, skipping copy:", e.message);
-  }
 }
 
 buildAll().catch((err) => {
