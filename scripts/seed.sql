@@ -30,16 +30,16 @@ ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role =
 -- USERS (password_hash = bcrypt of 'admin123')
 -- Using pre-computed bcrypt hash for 'admin123'
 INSERT INTO users (nama, email, password_hash, role, no_hp, is_active) VALUES
-  ('Siti Rahayu', 'kepala1@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'kepala_dapur', '081234567001', true),
-  ('Budi Santoso', 'kepala2@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'kepala_dapur', '081234567002', true),
-  ('Dewi Lestari', 'staff1@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'staff_dapur', '081234567003', true),
-  ('Ahmad Fauzi', 'staff2@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'staff_dapur', '081234567004', true),
-  ('Rina Wati', 'staff3@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'staff_dapur', '081234567005', true),
-  ('Hendra Gunawan', 'driver1@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'driver', '081234567006', true),
-  ('Supardi', 'driver2@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'driver', '081234567007', true),
-  ('Lina Marlina', 'gudang@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'admin_gudang', '081234567008', true),
-  ('Drs. Bambang Irawan', 'yayasan@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'admin_yayasan', '081234567009', true),
-  ('Farida Hanum', 'staff4@mbg.id', '$2b$10$8K1p/a0dR5PzQ6.eB5eNxOzNJPMnj3EgjlJm9r5IKkD5EzJi7JiuC', 'staff_dapur', '081234567010', false);
+  ('Siti Rahayu', 'kepala1@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'kepala_dapur', '081234567001', true),
+  ('Budi Santoso', 'kepala2@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'kepala_dapur', '081234567002', true),
+  ('Dewi Lestari', 'staff1@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'staff_dapur', '081234567003', true),
+  ('Ahmad Fauzi', 'staff2@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'staff_dapur', '081234567004', true),
+  ('Rina Wati', 'staff3@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'staff_dapur', '081234567005', true),
+  ('Hendra Gunawan', 'driver1@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'driver', '081234567006', true),
+  ('Supardi', 'driver2@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'driver', '081234567007', true),
+  ('Lina Marlina', 'gudang@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'admin_gudang', '081234567008', true),
+  ('Drs. Bambang Irawan', 'yayasan@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'admin_yayasan', '081234567009', true),
+  ('Farida Hanum', 'staff4@mbg.id', '$2b$10$4KsaCoV3bTjeP2SnGOVDD.vll/3wez4PNN9ePowMp3QtlYtiaw/wK', 'staff_dapur', '081234567010', false);
 
 -- Update dapur with kepala_dapur_id
 UPDATE dapur SET kepala_dapur_id = (SELECT id FROM users WHERE email = 'kepala1@mbg.id') WHERE nama = 'Dapur Sentral Jakarta Timur';
