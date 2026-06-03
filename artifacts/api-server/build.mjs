@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, mkdir, cp, rename } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -118,6 +118,61 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  // --- Vercel serverless handler build ---
+  const rootDir = path.resolve(artifactDir, "../..");
+  const apiDir = path.resolve(rootDir, "api");
+  await rm(apiDir, { recursive: true, force: true });
+  await mkdir(apiDir, { recursive: true });
+
+  await esbuild({
+    entryPoints: [path.resolve(artifactDir, "src/vercel-handler.ts")],
+    platform: "node",
+    bundle: true,
+    format: "esm",
+    outdir: apiDir,
+    outExtension: { ".js": ".mjs" },
+    logLevel: "info",
+    external: [
+      "*.node",
+      "sharp",
+      "better-sqlite3",
+      "sqlite3",
+      "canvas",
+      "bcrypt",
+      "argon2",
+      "fsevents",
+      "pg-native",
+    ],
+    sourcemap: "linked",
+    plugins: [
+      esbuildPluginPino({ transports: ["pino-pretty"] })
+    ],
+    banner: {
+      js: `import { createRequire as __bannerCrReq } from 'node:module';
+import __bannerPath from 'node:path';
+import __bannerUrl from 'node:url';
+
+globalThis.require = __bannerCrReq(import.meta.url);
+globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
+globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
+    `,
+    },
+  });
+
+  // Rename vercel-handler.mjs → index.mjs
+  await rename(path.resolve(apiDir, "vercel-handler.mjs"), path.resolve(apiDir, "index.mjs"));
+
+  // --- Copy frontend build to root dist/ for Vercel static serving ---
+  const frontendDist = path.resolve(rootDir, "artifacts/mbg-dapur/dist/public");
+  const rootDist = path.resolve(rootDir, "dist");
+  try {
+    await rm(rootDist, { recursive: true, force: true });
+    await cp(frontendDist, rootDist, { recursive: true });
+    console.log("Copied frontend build to root dist/");
+  } catch (e) {
+    console.warn("Frontend dist not found, skipping copy:", e.message);
+  }
 }
 
 buildAll().catch((err) => {

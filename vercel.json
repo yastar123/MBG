@@ -1,16 +1,16 @@
 {
   "version": 2,
   "buildCommand": "pnpm run build",
-  "outputDirectory": "artifacts/mbg-dapur/dist/public",
+  "outputDirectory": "dist",
   "functions": {
-    "api/index.ts": {
+    "api/index.mjs": {
       "runtime": "vercel-node@latest"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/index.mjs"
     },
     {
       "source": "/(.*)",

@@ -3,6 +3,8 @@
 # compiled output
 dist
 tmp
+/api
+/api-tmp
 out-tsc
 *.tsbuildinfo
 .expo
