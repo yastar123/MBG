@@ -26,6 +26,7 @@ import {
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { clearToken } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
+import { hasAccess } from "@/lib/permissions";
 import {
   Sidebar,
   SidebarContent,
@@ -127,30 +128,34 @@ function SidebarInner({ location, onNavigate, onClose }: { location: string; onN
       </SidebarHeader>
 
       <SidebarContent className="py-2">
-        {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-sidebar-foreground/35 text-[10px] tracking-[0.12em] uppercase px-3 py-1 font-semibold">
-              {group.label}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const active = isActive(location, item.href);
-                  return (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.name} className={active ? "nav-active-indicator" : ""}>
-                        <Link href={item.href} onClick={onNavigate} className="flex items-center gap-3 py-2">
-                          <item.icon size={16} />
-                          <span className="font-medium text-sm">{item.name}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {navGroups.map((group) => {
+          const allowedItems = group.items.filter((item) => user && hasAccess(user.role, item.href));
+          if (allowedItems.length === 0) return null;
+          return (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel className="text-sidebar-foreground/35 text-[10px] tracking-[0.12em] uppercase px-3 py-1 font-semibold">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {allowedItems.map((item) => {
+                    const active = isActive(location, item.href);
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton asChild isActive={active} tooltip={item.name} className={active ? "nav-active-indicator" : ""}>
+                          <Link href={item.href} onClick={onNavigate} className="flex items-center gap-3 py-2">
+                            <item.icon size={16} />
+                            <span className="font-medium text-sm">{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
@@ -274,10 +279,16 @@ function NotificationBell() {
 }
 
 function MobileBottomNav({ location, onOpenMenu }: { location: string; onOpenMenu: () => void }) {
+  const { data: user } = useGetMe();
+  const allowedItems = bottomNavItems.filter(item => {
+    if (item.href === null) return true; // "Lainnya" button
+    return user && hasAccess(user.role, item.href);
+  });
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-md border-t border-border/60 shadow-lg safe-bottom">
       <div className="flex items-stretch h-16">
-        {bottomNavItems.map((item) => {
+        {allowedItems.map((item) => {
           if (item.href === null) {
             return (
               <button
