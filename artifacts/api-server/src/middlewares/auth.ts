@@ -21,7 +21,12 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
       res.status(401).json({ error: "Token tidak valid" });
       return;
     }
-    req.userId = parseInt(parts[0]);
+    const userId = parseInt(parts[0]);
+    if (isNaN(userId) || userId <= 0) {
+      res.status(401).json({ error: "Token tidak valid" });
+      return;
+    }
+    req.userId = userId;
     req.userRole = parts[1];
     next();
   } catch {
